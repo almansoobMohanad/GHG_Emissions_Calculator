@@ -15,14 +15,14 @@ def get_ghg_categories(scope=None):
     
     try:
         query = """
-        SELECT sub.id, s.scope_number, s.scope_name,
+        SELECT src.id, s.scope_number, s.scope_name,
                c.category_code, c.category_name,
-               sub.subcategory_code, sub.subcategory_name,
-               sub.emission_factor, sub.unit
-        FROM ghg_subcategories sub
-        JOIN ghg_categories_new c ON sub.category_id = c.id
+               src.source_code, src.source_name,
+               src.emission_factor, src.unit
+        FROM ghg_emission_sources src
+        JOIN ghg_categories c ON src.category_id = c.id
         JOIN ghg_scopes s ON c.scope_id = s.id
-        WHERE sub.is_active = TRUE
+        WHERE src.is_active = TRUE
         """
         params = []
         
@@ -37,7 +37,7 @@ def get_ghg_categories(scope=None):
         return [{
             'id': r[0], 'scope_number': r[1], 'scope_name': r[2],
             'category_code': r[3], 'category_name': r[4],
-            'subcategory_code': r[5], 'subcategory_name': r[6],
+            'source_code': r[5], 'source_name': r[6],
             'emission_factor': float(r[7]), 'unit': r[8]
         } for r in rows]
     finally:
@@ -76,8 +76,8 @@ def get_emissions_summary(company_id, reporting_period):
         query = """
         SELECT s.scope_number, SUM(e.co2_equivalent) as total
         FROM emissions_data e
-        LEFT JOIN ghg_subcategories sub ON e.subcategory_id = sub.id
-        LEFT JOIN ghg_categories_new c ON sub.category_id = c.id
+        LEFT JOIN ghg_emission_sources src ON e.emission_source_id = src.id
+        LEFT JOIN ghg_categories c ON src.category_id = c.id
         LEFT JOIN ghg_scopes s ON c.scope_id = s.id
         WHERE e.company_id = %s AND e.reporting_period = %s
         GROUP BY s.scope_number
