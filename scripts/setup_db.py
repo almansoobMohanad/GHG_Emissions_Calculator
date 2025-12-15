@@ -213,16 +213,32 @@ class DatabaseSetup:
         
         # Add foreign key for users.company_id (after companies table exists)
         print("  Adding foreign key constraints...", end=" ")
-        fk_query = """
-            ALTER TABLE users 
-            ADD CONSTRAINT fk_users_company 
-            FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE SET NULL
+        
+        # Check if constraint already exists
+        check_fk_query = """
+            SELECT COUNT(*) as cnt FROM information_schema.TABLE_CONSTRAINTS 
+            WHERE CONSTRAINT_SCHEMA = %s 
+            AND TABLE_NAME = 'users' 
+            AND CONSTRAINT_NAME = 'fk_users_company'
         """
-        # This might fail if constraint already exists, that's OK
-        try:
-            self.execute_query(fk_query)
-            print("✅")
-        except:
+        cursor = self.connection.cursor(dictionary=True)
+        cursor.execute(check_fk_query, (self.db_name,))
+        result = cursor.fetchone()
+        cursor.close()
+        
+        if result['cnt'] == 0:
+            # Constraint doesn't exist, add it
+            fk_query = """
+                ALTER TABLE users 
+                ADD CONSTRAINT fk_users_company 
+                FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE SET NULL
+            """
+            if self.execute_query(fk_query):
+                print("✅")
+            else:
+                print("❌")
+                return False
+        else:
             print("⏭️  (already exists)")
         
         return True
@@ -305,6 +321,37 @@ class DatabaseSetup:
             print("✅")
             print("      Username: admin")
             print("      Password: admin123")
+        else:
+            print("⏭️  (already exists)")
+        
+        # Create sample company
+        print("  Creating sample company...", end=" ")
+        company_query = """
+            INSERT IGNORE INTO companies 
+            (company_name, company_code, industry_sector, address, contact_email, verification_status) VALUES
+            ('Demo Manufacturing Ltd', 'DEMO001', 'Manufacturing', '123 Industrial Park, London, UK', 'contact@demomfg.com', 'verified')
+        """
+        if self.execute_query(company_query):
+            print("✅")
+            print("      Company: Demo Manufacturing Ltd")
+            print("      Code: DEMO001")
+        else:
+            print("⏭️  (already exists)")
+        
+        # Create sample user associated with the company
+        print("  Creating sample company user...", end=" ")
+        sample_password_hash = hashlib.sha256("demo123".encode()).hexdigest()
+        
+        sample_user_query = """
+            INSERT IGNORE INTO users (username, email, password_hash, role, company_id, is_active) VALUES
+            ('demouser', 'user@demomfg.com', %s, 'manager', 
+             (SELECT id FROM companies WHERE company_code = 'DEMO001'), TRUE)
+        """
+        if self.execute_query(sample_user_query, (sample_password_hash,)):
+            print("✅")
+            print("      Username: demouser")
+            print("      Password: demo123")
+            print("      Role: manager")
         else:
             print("⏭️  (already exists)")
         
