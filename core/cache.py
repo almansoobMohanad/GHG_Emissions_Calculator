@@ -1,14 +1,36 @@
+"""Caching utilities wrapping database access for common queries.
+
+These helpers use Streamlit's caching to reduce load on the database and
+improve page responsiveness. The cache time-to-live (TTL) is tuned per
+resource type based on expected update frequency.
+"""
+
 import streamlit as st
 from core.database import DatabaseManager
 
 @st.cache_resource
 def get_database():
-    """Cached database manager - single instance for app"""
+    """Return a cached `DatabaseManager` instance.
+
+    Returns:
+        DatabaseManager: A single instance reused across the app. Each
+        operation should still call `connect()`/`disconnect()` to properly
+        borrow and return a pooled connection.
+    """
     return DatabaseManager()
 
 @st.cache_data(ttl=3600)
 def get_ghg_categories(scope=None):
-    """Cache GHG categories (1 hour - rarely changes)"""
+    """Return active emission sources joined with categories and scopes.
+
+    Args:
+        scope: Optional scope number (1, 2, or 3) to filter results.
+
+    Returns:
+        list[dict]: Records with keys: `id`, `scope_number`, `scope_name`,
+        `category_code`, `category_name`, `source_code`, `source_name`,
+        `emission_factor`, `unit`.
+    """
     db = get_database()
     if not db.connect():
         return []
@@ -45,7 +67,14 @@ def get_ghg_categories(scope=None):
 
 @st.cache_data(ttl=300)
 def get_company_info(company_id):
-    """Cache company info (5 minutes)"""
+    """Return company details by id (cached for 5 minutes).
+
+    Args:
+        company_id: Primary key of the company.
+
+    Returns:
+        dict|None: Company info or None if not found.
+    """
     db = get_database()
     if not db.connect():
         return None
@@ -67,7 +96,17 @@ def get_company_info(company_id):
 
 @st.cache_data(ttl=300)
 def get_emissions_summary(company_id, reporting_period):
-    """Cache emissions summary (5 minutes)"""
+    """Return emissions totals by scope for a company/period.
+
+    The totals are expressed in tonnes of CO₂e and cached for 5 minutes.
+
+    Args:
+        company_id: Company primary key.
+        reporting_period: Period label (e.g., "2024").
+
+    Returns:
+        dict: Keys `scope_1`, `scope_2`, `scope_3`, and `total`.
+    """
     db = get_database()
     if not db.connect():
         return {'scope_1': 0, 'scope_2': 0, 'scope_3': 0, 'total': 0}
