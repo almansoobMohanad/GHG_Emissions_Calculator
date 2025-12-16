@@ -1,9 +1,4 @@
-"""Caching utilities wrapping database access for common queries.
-
-These helpers use Streamlit's caching to reduce load on the database and
-improve page responsiveness. The cache time-to-live (TTL) is tuned per
-resource type based on expected update frequency.
-"""
+"""Caching utilities wrapping database access for common queries."""
 
 import streamlit as st
 from core.database import DatabaseManager
@@ -11,59 +6,44 @@ from core.database import DatabaseManager
 @st.cache_resource
 def get_database():
     """Return a cached `DatabaseManager` instance.
-
-    Returns:
-        DatabaseManager: A single instance reused across the app. Each
-        operation should still call `connect()`/`disconnect()` to properly
-        borrow and return a pooled connection.
+    
+    The DatabaseManager uses connection pooling internally, which is thread-safe.
+    Each query automatically checks out and returns connections to the pool.
     """
     return DatabaseManager()
 
 @st.cache_data(ttl=3600)
 def get_ghg_categories(scope=None):
-    """Return active emission sources joined with categories and scopes.
-
-    Args:
-        scope: Optional scope number (1, 2, or 3) to filter results.
-
-    Returns:
-        list[dict]: Records with keys: `id`, `scope_number`, `scope_name`,
-        `category_code`, `category_name`, `source_code`, `source_name`,
-        `emission_factor`, `unit`.
-    """
+    """Return active emission sources joined with categories and scopes."""
     db = get_database()
-    if not db.connect():
-        return []
     
-    try:
-        query = """
-        SELECT src.id, s.scope_number, s.scope_name,
-               c.category_code, c.category_name,
-               src.source_code, src.source_name,
-               src.emission_factor, src.unit
-        FROM ghg_emission_sources src
-        JOIN ghg_categories c ON src.category_id = c.id
-        JOIN ghg_scopes s ON c.scope_id = s.id
-        WHERE src.is_active = TRUE
-        """
-        params = []
-        
-        if scope:
-            query += " AND s.scope_number = %s"
-            params.append(scope)
-        
-        query += " ORDER BY s.scope_number, c.category_code"
-        
-        rows = db.fetch_query(query, tuple(params) if params else None)
-        
-        return [{
-            'id': r[0], 'scope_number': r[1], 'scope_name': r[2],
-            'category_code': r[3], 'category_name': r[4],
-            'source_code': r[5], 'source_name': r[6],
-            'emission_factor': float(r[7]), 'unit': r[8]
-        } for r in rows]
-    finally:
-        db.disconnect()
+    query = """
+    SELECT src.id, s.scope_number, s.scope_name,
+           c.category_code, c.category_name,
+           src.source_code, src.source_name,
+           src.emission_factor, src.unit
+    FROM ghg_emission_sources src
+    JOIN ghg_categories c ON src.category_id = c.id
+    JOIN ghg_scopes s ON c.scope_id = s.id
+    WHERE src.is_active = TRUE
+    """
+    params = []
+    
+    if scope:
+        query += " AND s.scope_number = %s"
+        params.append(scope)
+    
+    query += " ORDER BY s.scope_number, c.category_code"
+    
+    rows = db.fetch_query(query, tuple(params) if params else None)
+    
+    return [{
+        'id': r[0], 'scope_number': r[1], 'scope_name': r[2],
+        'category_code': r[3], 'category_name': r[4],
+        'source_code': r[5], 'source_name': r[6],
+        'emission_factor': float(r[7]), 'unit': r[8]
+    } for r in rows]
+
 
 @st.cache_data(ttl=300)
 def get_company_info(company_id):
@@ -212,3 +192,150 @@ def clear_emissions_cache():
     get_emissions_data.clear()
     get_emissions_summary.clear()
 
+
+@st.cache_data(ttl=300)  # Cache for 5 minutes
+def get_system_statistics():
+    """Return system-wide statistics for admin dashboard.
+    
+    Returns:
+        dict: Keys include total_users, total_companies, verified_companies,
+              total_emissions, total_co2e.
+    """
+    db = get_database()
+    if not db.connect():
+        return {
+            'total_users': 0,
+            'total_companies': 0,
+            'verified_companies': 0,
+            'total_emissions': 0,
+            'total_co2e': 0
+        }
+    
+    try:
+        # Single efficient query instead of 5 separate ones
+        query = """
+        SELECT 
+            (SELECT COUNT(*) FROM users) as total_users,
+            (SELECT COUNT(*) FROM companies) as total_companies,
+            (SELECT COUNT(*) FROM companies WHERE verification_status = 'verified') as verified_companies,
+            (SELECT COUNT(*) FROM emissions_data) as total_emissions,
+            (SELECT COALESCE(SUM(co2_equivalent), 0) FROM emissions_data) as total_co2e
+        """
+        
+        row = db.fetch_one(query)
+        
+        if row:
+            return {
+                'total_users': row[0],
+                'total_companies': row[1],
+                'verified_companies': row[2],
+                'total_emissions': row[3],
+                'total_co2e': float(row[4])
+            }
+        return {
+            'total_users': 0,
+            'total_companies': 0,
+            'verified_companies': 0,
+            'total_emissions': 0,
+            'total_co2e': 0
+        }
+    finally:
+        db.disconnect()
+
+@st.cache_data(ttl=60)  # Cache for 1 minute (more dynamic data)
+def get_recent_activity(limit=10):
+    """Return recent emissions data entries across all companies.
+    
+    Args:
+        limit: Number of recent records to return.
+    
+    Returns:
+        list[dict]: Recent activity records with user, company, and emission details.
+    """
+    db = get_database()
+    if not db.connect():
+        return []
+    
+    try:
+        query = """
+        SELECT 
+            e.id,
+            e.created_at,
+            u.username,
+            c.company_name,
+            e.co2_equivalent,
+            e.verification_status
+        FROM emissions_data e
+        JOIN users u ON e.user_id = u.id
+        JOIN companies c ON e.company_id = c.id
+        ORDER BY e.created_at DESC
+        LIMIT %s
+        """
+        
+        rows = db.fetch_query(query, (limit,))
+        
+        return [{
+            'id': r[0],
+            'created_at': r[1],
+            'username': r[2],
+            'company_name': r[3],
+            'co2_equivalent': float(r[4]),
+            'verification_status': r[5]
+        } for r in rows]
+    finally:
+        db.disconnect()
+
+@st.cache_data(ttl=600)  # Cache for 10 minutes (rarely changes)
+def get_users_by_role():
+    """Return count of users grouped by role.
+    
+    Returns:
+        list[dict]: List of {role, count} dictionaries.
+    """
+    db = get_database()
+    if not db.connect():
+        return []
+    
+    try:
+        query = """
+        SELECT role, COUNT(*) as count
+        FROM users
+        GROUP BY role
+        ORDER BY count DESC
+        """
+        
+        rows = db.fetch_query(query)
+        
+        return [{
+            'role': r[0],
+            'count': r[1]
+        } for r in rows]
+    finally:
+        db.disconnect()
+
+@st.cache_data(ttl=600)  # Cache for 10 minutes
+def get_companies_by_status():
+    """Return count of companies grouped by verification status.
+    
+    Returns:
+        list[dict]: List of {status, count} dictionaries.
+    """
+    db = get_database()
+    if not db.connect():
+        return []
+    
+    try:
+        query = """
+        SELECT verification_status, COUNT(*) as count
+        FROM companies
+        GROUP BY verification_status
+        """
+        
+        rows = db.fetch_query(query)
+        
+        return [{
+            'status': r[0],
+            'count': r[1]
+        } for r in rows]
+    finally:
+        db.disconnect()
