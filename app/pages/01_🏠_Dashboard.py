@@ -1,5 +1,5 @@
 """
-Dashboard - Main overview page
+Dashboard - Main overview page with role-based access control
 """
 import streamlit as st
 import sys
@@ -10,19 +10,21 @@ import plotly.graph_objects as go
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from core.cache import get_database, get_emissions_summary, get_company_info
+from core.permissions import check_page_permission, show_permission_badge, can_user
+from config.permissions import get_role_display_name
 
-# Check authentication first
-if not st.session_state.get('authenticated', False):
-    st.warning("⚠️ Please login to access this page")
-    st.stop()
+# Check authentication and permissions
+check_page_permission('01_🏠_Dashboard.py')
 
 st.set_page_config(page_title="Dashboard", page_icon="🏠", layout="wide")
 
 # Sidebar user info
 with st.sidebar:
+    show_permission_badge()  # Shows colored role badge
+    
     st.markdown("### 👤 User Information")
     st.write(f"**Username:** {st.session_state.username}")
-    st.write(f"**Role:** {st.session_state.role.title()}")
+    st.write(f"**Role:** {st.session_state.role.replace('_', ' ').title()}")
     
     if st.session_state.company_id:
         company = get_company_info(st.session_state.company_id)
@@ -36,14 +38,13 @@ with st.sidebar:
     st.divider()
     
     if st.button("🚪 Logout", type="secondary", use_container_width=True):
-        # Clear session state
         for key in list(st.session_state.keys()):
             del st.session_state[key]
-        st.rerun()
+        st.switch_page("main.py")
 
 # Main content
 st.title("🏠 Dashboard")
-st.markdown(f"Welcome back, **{st.session_state.username}**!")
+st.markdown(f"Welcome back, **{st.session_state.username}**! ({get_role_display_name(st.session_state.role)})")
 
 st.divider()
 
@@ -76,23 +77,37 @@ if st.session_state.company_id:
     
     with col2:
         st.subheader("🎯 Quick Actions")
-        if st.button("➕ Add New Emission", use_container_width=True, type="primary"):
-            st.switch_page("pages/02_➕_Add_Emissions.py")
-        if st.button("📊 View All Data", use_container_width=True):
-            st.switch_page("pages/03_📊_View_Data.py")
-        if st.button("📋 Generate Report", use_container_width=True):
-            st.switch_page("pages/04_📋_Reports.py")
+        
+        # Show actions based on permissions
+        if can_user('can_add_emissions'):
+            if st.button("➕ Add New Emission", use_container_width=True, type="primary"):
+                st.switch_page("pages/02_➕_Add_Emissions.py")
+        
+        if can_user('can_view_data'):
+            if st.button("📊 View All Data", use_container_width=True):
+                st.switch_page("pages/03_📊_View_Data.py")
+        
+        if can_user('can_generate_reports'):
+            if st.button("📋 Generate Report", use_container_width=True):
+                st.switch_page("pages/04_📋_Reports.py")
+        
+        if can_user('can_verify_data'):
+            if st.button("✅ Verify Data", use_container_width=True):
+                st.switch_page("pages/05_✅_Verify_Data.py")
+        
+        if can_user('can_manage_users'):
+            if st.button("⚙️ Admin Panel", use_container_width=True):
+                st.switch_page("pages/05_⚙️_Admin_Panel.py")
 else:
     st.warning("⚠️ No company assigned to your account. Please contact an administrator.")
 
 st.divider()
 
-# Charts section
+# Charts section (same as before)
 if st.session_state.company_id:
     db = get_database()
     if db.connect():
         try:
-            # Fetch data for charts
             query = """
                 SELECT 
                     e.reporting_period,
@@ -121,21 +136,15 @@ if st.session_state.company_id:
                     period, scope_num, scope_name, source, co2e = row
                     co2e_kg = float(co2e)
                     
-                    # Aggregate by scope
                     scope_key = f"Scope {scope_num}"
                     scope_data[scope_key] = scope_data.get(scope_key, 0) + co2e_kg
-                    
-                    # Aggregate by source
                     source_data[source] = source_data.get(source, 0) + co2e_kg
-                    
-                    # Aggregate by period
                     period_data[period] = period_data.get(period, 0) + co2e_kg
                 
                 # Create charts
                 chart_col1, chart_col2 = st.columns(2)
                 
                 with chart_col1:
-                    # Pie chart for scopes
                     if scope_data:
                         fig_pie = px.pie(
                             values=list(scope_data.values()),
@@ -147,7 +156,6 @@ if st.session_state.company_id:
                         st.plotly_chart(fig_pie, use_container_width=True)
                 
                 with chart_col2:
-                    # Line chart for reporting periods
                     if period_data:
                         sorted_periods = sorted(period_data.items())
                         fig_line = go.Figure()
@@ -167,9 +175,7 @@ if st.session_state.company_id:
                         )
                         st.plotly_chart(fig_line, use_container_width=True)
                 
-                # Bar chart for emission sources (full width)
                 if source_data:
-                    # Get top 10 sources
                     sorted_sources = sorted(source_data.items(), key=lambda x: x[1], reverse=True)[:10]
                     fig_bar = px.bar(
                         x=[s[1] for s in sorted_sources],
