@@ -1,5 +1,5 @@
 """
-Add Emissions - Data entry form
+Add Emissions - Data entry form (with proper cache invalidation)
 """
 import streamlit as st
 import sys
@@ -7,7 +7,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from core.cache import get_database, get_ghg_categories, get_emissions_summary
+from core.cache import (
+    get_database, 
+    get_ghg_categories, 
+    clear_emissions_cache
+)
 from config.constants import REPORTING_PERIODS
 
 # Check authentication
@@ -20,10 +24,11 @@ st.set_page_config(page_title="Add Emission", page_icon="➕", layout="wide")
 # Sidebar
 with st.sidebar:
     st.write(f"**User:** {st.session_state.username}")
-    if st.button("🚪 Logout"):
+    if st.button("🚪 Logout", type="secondary", use_container_width=True):
         for key in list(st.session_state.keys()):
             del st.session_state[key]
-        st.rerun()
+        st.switch_page("main.py")
+
 
 st.title("➕ Add Emission Entry")
 
@@ -126,12 +131,14 @@ if submitted:
 
         success = db.execute_query(insert_query, params)
         if success:
-            # Clear cache so dashboard shows updated data immediately
-            get_emissions_summary.clear()
+
+            # Clear ALL emissions-related caches
+            clear_emissions_cache()
+        
             st.success(
                 f"✅ Emission saved! CO₂e: {co2_equivalent:.4f} kg ({activity_data} × {emission_factor} {selected_source['unit']})"
             )
-            st.info("💡 Dashboard will now show updated totals.")
+            st.info("💡 Data updated across all pages. Navigate to Dashboard or View Data to see changes.")
         else:
             st.error("Failed to save emission. Please try again.")
     finally:
