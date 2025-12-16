@@ -1,23 +1,23 @@
-"""Caching utilities with improved connection management.
+"""Caching utilities wrapping database access for common queries.
 
-Fixed to prevent "Lost connection to MySQL server" errors.
+These helpers use Streamlit's caching to reduce load on the database and
+improve page responsiveness. The cache time-to-live (TTL) is tuned per
+resource type based on expected update frequency.
 """
 
 import streamlit as st
 from core.database import DatabaseManager
 
-# REMOVED @st.cache_resource - this was causing connection issues
+@st.cache_resource
 def get_database():
-    """Return a fresh DatabaseManager instance.
-    
-    Note: Not cached because MySQL connections can't be safely cached
-    across Streamlit reruns. Each function creates and closes its own connection.
-    
+    """Return a cached `DatabaseManager` instance.
+
     Returns:
-        DatabaseManager: A new instance for each call.
+        DatabaseManager: A single instance reused across the app. Each
+        operation should still call `connect()`/`disconnect()` to properly
+        borrow and return a pooled connection.
     """
     return DatabaseManager()
-
 
 @st.cache_data(ttl=3600)
 def get_ghg_categories(scope=None):
@@ -65,7 +65,6 @@ def get_ghg_categories(scope=None):
     finally:
         db.disconnect()
 
-
 @st.cache_data(ttl=300)
 def get_company_info(company_id):
     """Return company details by id (cached for 5 minutes).
@@ -94,7 +93,6 @@ def get_company_info(company_id):
         return None
     finally:
         db.disconnect()
-
 
 @st.cache_data(ttl=300)
 def get_emissions_summary(company_id, reporting_period):
@@ -142,8 +140,7 @@ def get_emissions_summary(company_id, reporting_period):
     finally:
         db.disconnect()
 
-
-@st.cache_data(ttl=60)
+@st.cache_data(ttl=60)  # Cache for 1 minute (data changes frequently)
 def get_emissions_data(company_id, period_filter=None, scope_filter=None, status_filter=None):
     """Return emissions records with optional filters (cached for 1 minute).
     
@@ -209,9 +206,9 @@ def get_emissions_data(company_id, period_filter=None, scope_filter=None, status
         db.disconnect()
 
 
+# Optional: Add cache clearing function for when data is modified
 def clear_emissions_cache():
     """Clear emissions-related caches after INSERT/UPDATE/DELETE operations."""
     get_emissions_data.clear()
     get_emissions_summary.clear()
-    # Note: We don't clear get_company_info or get_ghg_categories 
-    # as those don't change when emissions are added
+

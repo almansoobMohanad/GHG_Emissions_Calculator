@@ -1,102 +1,144 @@
+"""Database access layer with connection pooling.
+
+Provides a lightweight wrapper around `mysql.connector` using a shared
+connection pool. The pool is created once per-process and subsequent calls
+to `connect()` borrow a connection which must be returned with `disconnect()`.
 """
-Database Manager with proper connection handling
-"""
+
 import mysql.connector
-from mysql.connector import Error
+from mysql.connector import pooling, Error
 import streamlit as st
+from config.settings import config
+import logging
+
+logger = logging.getLogger(__name__)
 
 class DatabaseManager:
+    """Manage pooled connections and basic query helpers.
+
+    Typical usage:
+        db = DatabaseManager()
+        if db.connect():
+            try:
+                rows = db.fetch_query("SELECT NOW()")
+            finally:
+                db.disconnect()
+    """
+    _connection_pool = None
+    
     def __init__(self):
         self.connection = None
-        self.cursor = None
+        self._setup_pool()
+    
+    def _setup_pool(self):
+        """Initialize the shared MySQL connection pool if not created.
 
-        # Try nested secrets first, then flat secrets, then env vars
-        db_secrets = st.secrets.get("database", {})
-        host = db_secrets.get("host") or st.secrets.get("DB_HOST") or os.getenv("DB_HOST")
-        user = db_secrets.get("user") or st.secrets.get("DB_USER") or os.getenv("DB_USER")
-        password = db_secrets.get("password") or st.secrets.get("DB_PASSWORD") or os.getenv("DB_PASSWORD")
-        database = db_secrets.get("database") or st.secrets.get("DB_NAME") or os.getenv("DB_NAME")
-        port = db_secrets.get("port") or st.secrets.get("DB_PORT") or os.getenv("DB_PORT", 3306)
-        ssl_disabled = db_secrets.get("ssl_disabled") or st.secrets.get("DB_SSL_DISABLED") or os.getenv("DB_SSL_DISABLED", "true")
-
-        if not all([host, user, password, database]):
-            st.error("Database secrets missing. Set either [database] section or flat DB_* keys in Streamlit secrets.")
-            raise KeyError("Missing DB secrets")
-
-        self.config = {
-            'host': host,
-            'user': user,
-            'password': password,
-            'database': database,
-            'port': int(port),
-            'connect_timeout': 10,
-            'autocommit': True,
-            'pool_reset_session': True,
-            'ssl_disabled': str(ssl_disabled).lower() in ("1","true","yes","on"),
-        }
+        Creates a pool named `ghg_pool` with a default size of 5 connections
+        using configuration from `config.settings`.
+        """
+        if DatabaseManager._connection_pool is None:
+            try:
+                pool_config = config.database_config.copy()
+                pool_config.update({
+                    'pool_name': 'ghg_pool',
+                    'pool_size': 5,
+                    'pool_reset_session': True
+                })
+                DatabaseManager._connection_pool = pooling.MySQLConnectionPool(**pool_config)
+                logger.info("✅ Database pool created")
+            except Error as e:
+                logger.error(f"❌ Pool creation failed: {e}")
+                st.error("Database connection failed")
     
     def connect(self):
-        """Establish database connection with error handling."""
+        """Borrow a connection from the pool.
+
+        Returns:
+            bool: True if a connection was successfully acquired.
+        """
         try:
-            if self.connection is None or not self.connection.is_connected():
-                self.connection = mysql.connector.connect(**self.config)
-                self.cursor = self.connection.cursor()
+            if DatabaseManager._connection_pool:
+                self.connection = DatabaseManager._connection_pool.get_connection()
                 return True
-            return True
+            return False
         except Error as e:
-            st.error(f"Database connection error: {e}")
+            logger.error(f"Connection failed: {e}")
             return False
     
     def disconnect(self):
-        """Safely close database connection."""
+        """Return the current connection back to the pool.
+
+        Safe to call multiple times.
+        """
+        if self.connection and self.connection.is_connected():
+            self.connection.close()
+            self.connection = None
+    
+    def execute_query(self, query, params=None, return_id=False):
+        """Execute a data-modifying SQL statement.
+
+        Args:
+            query: SQL string with placeholders.
+            params: Optional tuple of parameters to bind.
+            return_id: When True, returns last inserted id (for INSERTs).
+
+        Returns:
+            bool|int: True on success, or lastrowid when `return_id=True`.
+        """
         try:
-            if self.cursor:
-                self.cursor.close()
-                self.cursor = None
-            if self.connection and self.connection.is_connected():
-                self.connection.close()
-                self.connection = None
+            cursor = self.connection.cursor()
+            cursor.execute(query, params)
+            self.connection.commit()
+            
+            if return_id:
+                last_id = cursor.lastrowid
+                cursor.close()
+                return last_id
+            
+            cursor.close()
+            return True
         except Error as e:
-            # Log but don't raise - we're cleaning up anyway
-            print(f"Error during disconnect: {e}")
+            logger.error(f"Query error: {e}")
+            if self.connection:
+                self.connection.rollback()
+            return False
     
     def fetch_query(self, query, params=None):
-        """Execute SELECT query and return all results."""
+        """Execute a SELECT query and return all rows.
+
+        Args:
+            query: SQL SELECT string with placeholders.
+            params: Optional tuple of parameters to bind.
+
+        Returns:
+            list[tuple]: List of rows. Empty list on error.
+        """
         try:
-            if not self.connection or not self.connection.is_connected():
-                self.connect()
-            
-            self.cursor.execute(query, params or ())
-            return self.cursor.fetchall()
+            cursor = self.connection.cursor()
+            cursor.execute(query, params)
+            results = cursor.fetchall()
+            cursor.close()
+            return results
         except Error as e:
-            st.error(f"Query error: {e}")
+            logger.error(f"Fetch error: {e}")
             return []
     
     def fetch_one(self, query, params=None):
-        """Execute SELECT query and return one result."""
+        """Execute a SELECT query and return a single row.
+
+        Args:
+            query: SQL SELECT string with placeholders.
+            params: Optional tuple of parameters to bind.
+
+        Returns:
+            tuple|None: First row or None if not found or on error.
+        """
         try:
-            if not self.connection or not self.connection.is_connected():
-                self.connect()
-            
-            self.cursor.execute(query, params or ())
-            return self.cursor.fetchone()
+            cursor = self.connection.cursor()
+            cursor.execute(query, params)
+            result = cursor.fetchone()
+            cursor.close()
+            return result
         except Error as e:
-            st.error(f"Query error: {e}")
+            logger.error(f"Fetch error: {e}")
             return None
-    
-    def execute_query(self, query, params=None):
-        """Execute INSERT/UPDATE/DELETE query."""
-        try:
-            if not self.connection or not self.connection.is_connected():
-                self.connect()
-            
-            self.cursor.execute(query, params or ())
-            # Since autocommit=True, no need to call commit()
-            return True
-        except Error as e:
-            st.error(f"Execute error: {e}")
-            return False
-    
-    def __del__(self):
-        """Cleanup on object destruction."""
-        self.disconnect()
