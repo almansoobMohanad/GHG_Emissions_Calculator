@@ -139,3 +139,76 @@ def get_emissions_summary(company_id, reporting_period):
         return result
     finally:
         db.disconnect()
+
+@st.cache_data(ttl=60)  # Cache for 1 minute (data changes frequently)
+def get_emissions_data(company_id, period_filter=None, scope_filter=None, status_filter=None):
+    """Return emissions records with optional filters (cached for 1 minute).
+    
+    Args:
+        company_id: Company primary key.
+        period_filter: Optional reporting period (e.g., "2024-Q1") or "All".
+        scope_filter: Optional scope filter (e.g., "Scope 1") or "All".
+        status_filter: Optional verification status or "All".
+    
+    Returns:
+        list[tuple]: Emissions records with all details.
+    """
+    db = get_database()
+    if not db.connect():
+        return []
+    
+    try:
+        query = """
+            SELECT 
+                e.id,
+                e.reporting_period,
+                s.scope_number,
+                s.scope_name,
+                c.category_name,
+                src.source_name,
+                e.activity_data,
+                src.unit,
+                e.emission_factor,
+                e.co2_equivalent,
+                e.verification_status,
+                e.data_source,
+                e.calculation_method,
+                e.notes,
+                e.created_at,
+                u.username as entered_by
+            FROM emissions_data e
+            JOIN ghg_emission_sources src ON e.emission_source_id = src.id
+            JOIN ghg_categories c ON src.category_id = c.id
+            JOIN ghg_scopes s ON c.scope_id = s.id
+            JOIN users u ON e.user_id = u.id
+            WHERE e.company_id = %s
+        """
+        params = [company_id]
+        
+        # Apply filters
+        if period_filter and period_filter != "All":
+            query += " AND e.reporting_period = %s"
+            params.append(period_filter)
+        
+        if scope_filter and scope_filter != "All":
+            scope_num = int(scope_filter.split()[1])
+            query += " AND s.scope_number = %s"
+            params.append(scope_num)
+        
+        if status_filter and status_filter != "All":
+            query += " AND e.verification_status = %s"
+            params.append(status_filter)
+        
+        query += " ORDER BY e.created_at DESC"
+        
+        return db.fetch_query(query, tuple(params))
+    finally:
+        db.disconnect()
+
+
+# Optional: Add cache clearing function for when data is modified
+def clear_emissions_cache():
+    """Clear emissions-related caches after INSERT/UPDATE/DELETE operations."""
+    get_emissions_data.clear()
+    get_emissions_summary.clear()
+
