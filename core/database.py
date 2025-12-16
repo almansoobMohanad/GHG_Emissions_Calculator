@@ -9,18 +9,30 @@ class DatabaseManager:
     def __init__(self):
         self.connection = None
         self.cursor = None
-        
-        # Get database config from Streamlit secrets
+
+        # Try nested secrets first, then flat secrets, then env vars
+        db_secrets = st.secrets.get("database", {})
+        host = db_secrets.get("host") or st.secrets.get("DB_HOST") or os.getenv("DB_HOST")
+        user = db_secrets.get("user") or st.secrets.get("DB_USER") or os.getenv("DB_USER")
+        password = db_secrets.get("password") or st.secrets.get("DB_PASSWORD") or os.getenv("DB_PASSWORD")
+        database = db_secrets.get("database") or st.secrets.get("DB_NAME") or os.getenv("DB_NAME")
+        port = db_secrets.get("port") or st.secrets.get("DB_PORT") or os.getenv("DB_PORT", 3306)
+        ssl_disabled = db_secrets.get("ssl_disabled") or st.secrets.get("DB_SSL_DISABLED") or os.getenv("DB_SSL_DISABLED", "true")
+
+        if not all([host, user, password, database]):
+            st.error("Database secrets missing. Set either [database] section or flat DB_* keys in Streamlit secrets.")
+            raise KeyError("Missing DB secrets")
+
         self.config = {
-            'host': st.secrets["database"]["host"],
-            'user': st.secrets["database"]["user"],
-            'password': st.secrets["database"]["password"],
-            'database': st.secrets["database"]["database"],
-            'port': st.secrets["database"].get("port", 3306),
-            # IMPORTANT: Connection settings to prevent timeouts
+            'host': host,
+            'user': user,
+            'password': password,
+            'database': database,
+            'port': int(port),
             'connect_timeout': 10,
-            'autocommit': True,  # Important for avoiding hanging transactions
+            'autocommit': True,
             'pool_reset_session': True,
+            'ssl_disabled': str(ssl_disabled).lower() in ("1","true","yes","on"),
         }
     
     def connect(self):
