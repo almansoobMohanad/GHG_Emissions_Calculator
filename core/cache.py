@@ -191,6 +191,12 @@ def clear_emissions_cache():
     """Clear emissions-related caches after INSERT/UPDATE/DELETE operations."""
     get_emissions_data.clear()
     get_emissions_summary.clear()
+    
+    # Add these new clears
+    get_company_emissions_for_analytics.clear()  # Dashboard charts
+    get_system_statistics.clear()  # Admin panel stats
+    get_recent_activity.clear()  # Admin panel activity
+    get_all_companies_with_stats.clear()  # Company stats
 
 
 @st.cache_data(ttl=300)  # Cache for 5 minutes
@@ -854,5 +860,48 @@ def delete_company(company_id):
             get_system_statistics.clear()
         
         return result
+    finally:
+        db.disconnect()
+
+
+@st.cache_data(ttl=300)  # Cache for 5 minutes
+def get_company_emissions_for_analytics(company_id):
+    """Return emissions data for analytics and charts.
+    
+    Args:
+        company_id: Company primary key.
+    
+    Returns:
+        list[dict]: Emissions records with period, scope, source, and CO2e.
+    """
+    db = get_database()
+    if not db.connect():
+        return []
+    
+    try:
+        query = """
+        SELECT 
+            e.reporting_period,
+            s.scope_number,
+            s.scope_name,
+            src.source_name,
+            e.co2_equivalent
+        FROM emissions_data e
+        JOIN ghg_emission_sources src ON e.emission_source_id = src.id
+        JOIN ghg_categories c ON src.category_id = c.id
+        JOIN ghg_scopes s ON c.scope_id = s.id
+        WHERE e.company_id = %s
+        ORDER BY e.reporting_period, s.scope_number
+        """
+        
+        rows = db.fetch_query(query, (company_id,))
+        
+        return [{
+            'reporting_period': r[0],
+            'scope_number': r[1],
+            'scope_name': r[2],
+            'source_name': r[3],
+            'co2_equivalent': float(r[4])
+        } for r in rows]
     finally:
         db.disconnect()
