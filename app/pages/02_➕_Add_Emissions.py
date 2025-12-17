@@ -24,7 +24,7 @@ st.set_page_config(page_title="Add Emission", page_icon="➕", layout="wide")
 # Sidebar
 with st.sidebar:
     st.write(f"**User:** {st.session_state.username}")
-    if st.button("🚪 Logout", type="secondary", use_container_width=True):
+    if st.button("🚪 Logout", type="secondary", width="stretch"):
         for key in list(st.session_state.keys()):
             del st.session_state[key]
         st.switch_page("main.py")

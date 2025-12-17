@@ -29,7 +29,7 @@ st.set_page_config(page_title="Company Management", page_icon="🏢", layout="wi
 with st.sidebar:
     show_permission_badge()
     st.write(f"**User:** {st.session_state.username}")
-    if st.button("🚪 Logout", type="secondary", use_container_width=True):
+    if st.button("🚪 Logout", type="secondary", width="stretch"):
         for key in list(st.session_state.keys()):
             del st.session_state[key]
         st.switch_page("main.py")
@@ -67,7 +67,7 @@ with tab1:
         
         st.dataframe(
             companies_df,
-            use_container_width=True,
+            width="stretch",
             hide_index=True,
             height=400
         )
@@ -109,7 +109,7 @@ with tab2:
                 format_func=lambda x: x.title()
             )
         
-        submitted = st.form_submit_button("Create Company", type="primary", use_container_width=True)
+        submitted = st.form_submit_button("Create Company", type="primary", width="stretch")
         
         if submitted:
             # Validation
@@ -200,10 +200,10 @@ with tab3:
             col_save, col_delete = st.columns(2)
             
             with col_save:
-                save_btn = st.form_submit_button("💾 Save Changes", type="primary", use_container_width=True)
+                save_btn = st.form_submit_button("💾 Save Changes", type="primary", width="stretch")
             
             with col_delete:
-                delete_btn = st.form_submit_button("🗑️ Delete Company", use_container_width=True)
+                delete_btn = st.form_submit_button("🗑️ Delete Company", width="stretch")
             
             if save_btn:
                 # Validation
