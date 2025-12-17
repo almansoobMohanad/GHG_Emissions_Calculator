@@ -6,8 +6,8 @@ import streamlit as st
 import sys
 from pathlib import Path
 
-# Add parent directory to path
-sys.path.insert(0, str(Path(__file__).parent))
+# Add project root to path (parent of app directory)
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from components import render_header, render_login_form, render_register_form
 from core.authentication import init_session_state
