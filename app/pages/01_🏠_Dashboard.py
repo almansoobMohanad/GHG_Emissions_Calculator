@@ -41,7 +41,7 @@ with st.sidebar:
     
     st.divider()
     
-    if st.button("🚪 Logout", type="secondary", use_container_width=True):
+    if st.button("🚪 Logout", type="secondary", width="stretch"):
         for key in list(st.session_state.keys()):
             del st.session_state[key]
         st.switch_page("main.py")
@@ -51,6 +51,80 @@ st.title("🏠 Dashboard")
 st.markdown(f"Welcome back, **{st.session_state.username}**! ({get_role_display_name(st.session_state.role)})")
 
 st.divider()
+
+# ============================================================================
+# NEW: Check if company is pending verification
+# ============================================================================
+if st.session_state.company_id:
+    company = get_company_info(st.session_state.company_id)
+    
+    if company and company['verification_status'] == 'pending':
+        # Show pending verification message
+        st.warning(f"""
+        ### ⏳ Company Pending Verification
+        
+        Your company **{company['company_name']}** is currently awaiting administrator verification.
+        
+        **What this means:**
+        - ✅ You can explore the dashboard and view features
+        - ⏳ Adding emissions and generating reports will be available once verified
+        - 📧 An administrator will review your registration soon
+        
+        **What happens next:**
+        Once an administrator verifies your company, you'll have full access to all features including:
+        - Adding emission entries
+        - Generating reports
+        - Managing company data
+        """)
+        
+        st.divider()
+        
+        # Show limited preview
+        st.info("📊 **Preview:** This is what your dashboard will look like after verification")
+        
+        # Show empty state preview
+        col1, col2 = st.columns([2, 1])
+        
+        with col1:
+            st.subheader("📊 Emissions Overview (Preview)")
+            col_a, col_b, col_c, col_d = st.columns(4)
+            
+            with col_a:
+                st.metric("Total Emissions", "0.00 tCO2e", help="Total emissions across all scopes")
+            with col_b:
+                st.metric("Scope 1", "0.00 tCO2e", help="Direct emissions")
+            with col_c:
+                st.metric("Scope 2", "0.00 tCO2e", help="Indirect emissions from energy")
+            with col_d:
+                st.metric("Scope 3", "0.00 tCO2e", help="Other indirect emissions")
+            
+            st.caption("💡 Start tracking emissions once your company is verified")
+        
+        with col2:
+            st.subheader("🎯 Available After Verification")
+            st.markdown("""
+            - ➕ Add New Emission
+            - 📊 View All Data
+            - 📋 Generate Report
+            - And more...
+            """)
+        
+        st.stop()  # Stop here and don't show the rest of the dashboard
+    
+    # If company is rejected
+    elif company and company['verification_status'] == 'rejected':
+        st.error(f"""
+        ### ❌ Company Verification Rejected
+        
+        Unfortunately, your company **{company['company_name']}** was not verified.
+        
+        Please contact an administrator for more information or to re-submit your company registration.
+        """)
+        st.stop()
+
+# ============================================================================
+# NORMAL DASHBOARD (Only shown if company is verified or user is admin)
+# ============================================================================
 
 # Quick stats
 if st.session_state.company_id:
@@ -85,30 +159,30 @@ if st.session_state.company_id:
         
         # Show actions based on permissions
         if can_user('can_add_emissions'):
-            if st.button("➕ Add New Emission", use_container_width=True, type="primary"):
+            if st.button("➕ Add New Emission", width="stretch", type="primary"):
                 st.switch_page("pages/02_➕_Add_Emissions.py")
         
         if can_user('can_view_data'):
-            if st.button("📊 View All Data", use_container_width=True):
+            if st.button("📊 View All Data", width="stretch"):
                 st.switch_page("pages/03_📊_View_Data.py")
         
         if can_user('can_generate_reports'):
-            if st.button("📋 Generate Report", use_container_width=True):
+            if st.button("📋 Generate Report", width="stretch"):
                 st.switch_page("pages/04_📋_Reports.py")
         
         if can_user('can_verify_data'):
-            if st.button("✅ Verify Data", use_container_width=True):
+            if st.button("✅ Verify Data", width="stretch"):
                 st.switch_page("pages/05_✅_Verify_Data.py")
         
         if can_user('can_manage_users'):
-            if st.button("⚙️ Admin Panel", use_container_width=True):
+            if st.button("⚙️ Admin Panel", width="stretch"):
                 st.switch_page("pages/05_⚙️_Admin_Panel.py")
 else:
     st.warning("⚠️ No company assigned to your account. Please contact an administrator.")
 
 st.divider()
 
-# Charts section - NOW USING CACHED DATA
+# Charts section - USING CACHED DATA
 if st.session_state.company_id:
     # CACHED: Get emissions data for analytics
     emissions_data = get_company_emissions_for_analytics(st.session_state.company_id)
@@ -144,7 +218,7 @@ if st.session_state.company_id:
                     color_discrete_sequence=px.colors.qualitative.Set2
                 )
                 fig_pie.update_traces(textposition='inside', textinfo='percent+label')
-                st.plotly_chart(fig_pie, use_container_width=True)
+                st.plotly_chart(fig_pie, width="stretch")
         
         with chart_col2:
             if period_data:
@@ -164,7 +238,7 @@ if st.session_state.company_id:
                     yaxis_title="CO₂e (kg)",
                     hovermode='x unified'
                 )
-                st.plotly_chart(fig_line, use_container_width=True)
+                st.plotly_chart(fig_line, width="stretch")
         
         if source_data:
             sorted_sources = sorted(source_data.items(), key=lambda x: x[1], reverse=True)[:10]
@@ -178,6 +252,6 @@ if st.session_state.company_id:
                 color_continuous_scale='Viridis'
             )
             fig_bar.update_layout(showlegend=False, height=400)
-            st.plotly_chart(fig_bar, use_container_width=True)
+            st.plotly_chart(fig_bar, width="stretch")
     else:
         st.info("📊 Charts will appear here once you add emission data.")
