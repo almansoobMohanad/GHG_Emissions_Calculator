@@ -12,7 +12,11 @@ from core.cache import (
     get_system_statistics,
     get_recent_activity,
     get_users_by_role,
-    get_companies_by_status
+    get_companies_by_status,
+    get_all_companies_with_stats,
+    get_company_details,
+    get_company_users,
+    update_company
 )
 
 # Check permissions
@@ -24,7 +28,7 @@ st.set_page_config(page_title="Admin Panel", page_icon="⚙️", layout="wide")
 with st.sidebar:
     show_permission_badge()
     st.write(f"**User:** {st.session_state.username}")
-    if st.button("🚪 Logout", type="secondary", use_container_width=True):
+    if st.button("🚪 Logout", type="secondary", width="stretch"):
         for key in list(st.session_state.keys()):
             del st.session_state[key]
         st.switch_page("main.py")
@@ -53,6 +57,119 @@ with col5:
 
 st.divider()
 
+# ============================================================================
+# NEW SECTION: Pending Companies Review
+# ============================================================================
+st.subheader("⏳ Pending Company Verifications")
+
+companies = get_all_companies_with_stats()
+pending_companies = [c for c in companies if c['verification_status'] == 'pending']
+
+if pending_companies:
+    st.warning(f"**{len(pending_companies)} company(ies) awaiting verification**")
+    
+    for company in pending_companies:
+        with st.expander(f"📋 Review: {company['company_name']} ({company['company_code']})", expanded=False):
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                st.markdown("**Company Details:**")
+                st.markdown(f"- **Name:** {company['company_name']}")
+                st.markdown(f"- **Code:** {company['company_code']}")
+                st.markdown(f"- **Industry:** {company['industry_sector']}")
+                st.markdown(f"- **Registered:** {company['created_at']}")
+            
+            with col2:
+                st.markdown("**Current Statistics:**")
+                st.markdown(f"- **Users:** {company['user_count']}")
+                st.markdown(f"- **Emissions:** {company['emission_count']}")
+                st.markdown(f"- **Total CO₂e:** {company['total_co2e'] / 1000:.2f} tonnes")
+            
+            # Get additional company details
+            details = get_company_details(company['id'])
+            
+            if details:
+                if details.get('address'):
+                    st.markdown(f"**Address:** {details['address']}")
+                if details.get('contact_email'):
+                    st.markdown(f"**Contact Email:** {details['contact_email']}")
+            
+            # Get manager/user info
+            users = get_company_users(company['id'])
+            managers = [u for u in users if u['role'] == 'manager']
+            
+            if managers:
+                st.markdown("**Registered Manager(s):**")
+                for manager in managers:
+                    st.markdown(f"- 👤 {manager['username']} ({manager['email']})")
+            
+            if users and len(users) > len(managers):
+                other_users = [u for u in users if u['role'] != 'manager']
+                st.markdown(f"**Other Users:** {len(other_users)}")
+            
+            st.divider()
+            
+            # Action buttons
+            col_approve, col_reject = st.columns(2)
+            
+            with col_approve:
+                if st.button(
+                    "✅ Approve Company", 
+                    key=f"approve_{company['id']}", 
+                    type="primary", 
+                    width="stretch",
+                    help="Verify this company and grant full access"
+                ):
+                    # Update company status to verified
+                    success = update_company(
+                        company['id'],
+                        company['company_name'],
+                        company['company_code'],
+                        company['industry_sector'],
+                        details.get('address') if details else None,
+                        details.get('contact_email') if details else None,
+                        'verified'  # Change status to verified
+                    )
+                    
+                    if success:
+                        st.success(f"✅ {company['company_name']} has been verified!")
+                        st.info("The company and its users now have full access to all features.")
+                        st.rerun()
+                    else:
+                        st.error("❌ Failed to update company status. Please try again.")
+            
+            with col_reject:
+                if st.button(
+                    "❌ Reject Company", 
+                    key=f"reject_{company['id']}", 
+                    width="stretch",
+                    help="Reject this company registration"
+                ):
+                    # Update company status to rejected
+                    success = update_company(
+                        company['id'],
+                        company['company_name'],
+                        company['company_code'],
+                        company['industry_sector'],
+                        details.get('address') if details else None,
+                        details.get('contact_email') if details else None,
+                        'rejected'  # Change status to rejected
+                    )
+                    
+                    if success:
+                        st.warning(f"❌ {company['company_name']} has been rejected")
+                        st.info("💡 Consider contacting the manager to explain the reason for rejection.")
+                        st.rerun()
+                    else:
+                        st.error("❌ Failed to update company status. Please try again.")
+else:
+    st.success("✅ No pending companies - all companies have been reviewed!")
+
+st.divider()
+# ============================================================================
+# END OF NEW SECTION
+# ============================================================================
+
 # Quick Actions
 st.subheader("🎯 Quick Actions")
 action_col1, action_col2, action_col3 = st.columns(3)
@@ -60,19 +177,19 @@ action_col1, action_col2, action_col3 = st.columns(3)
 with action_col1:
     st.markdown("### 👥 User Management")
     st.markdown("Manage user accounts, roles, and permissions")
-    if st.button("→ Go to User Management", use_container_width=True, type="primary"):
+    if st.button("→ Go to User Management", width="stretch", type="primary"):
         st.switch_page("pages/06_👥_User_Management.py")
 
 with action_col2:
     st.markdown("### 🏢 Company Management")
     st.markdown("Manage companies and verification status")
-    if st.button("→ Go to Company Management", use_container_width=True, type="primary"):
+    if st.button("→ Go to Company Management", width="stretch", type="primary"):
         st.switch_page("pages/07_🏢_Company_Management.py")
 
 with action_col3:
     st.markdown("### 📊 View All Data")
     st.markdown("View emissions data across all companies")
-    if st.button("→ View All Emissions", use_container_width=True, type="primary"):
+    if st.button("→ View All Emissions", width="stretch", type="primary"):
         st.switch_page("pages/03_📊_View_Data.py")
 
 st.divider()
@@ -94,7 +211,7 @@ if recent_records:
             "Status": record['verification_status']
         })
     
-    st.dataframe(activity_data, use_container_width=True, hide_index=True)
+    st.dataframe(activity_data, width="stretch", hide_index=True)
 else:
     st.info("No recent activity to display.")
 
