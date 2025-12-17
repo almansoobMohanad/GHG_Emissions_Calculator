@@ -33,9 +33,9 @@ def render_login_form():
         
         col_a, col_b = st.columns(2)
         with col_a:
-            login_btn = st.form_submit_button("🚀 Login", type="primary", width="stretch")
+            login_btn = st.form_submit_button("🚀 Login", type="primary")
         with col_b:
-            register_nav = st.form_submit_button("📝 Create Account", width="stretch")
+            register_nav = st.form_submit_button("📝 Create Account")
         
         if register_nav:
             st.session_state.show_register = True
