@@ -339,3 +339,520 @@ def get_companies_by_status():
         } for r in rows]
     finally:
         db.disconnect()
+
+
+@st.cache_data(ttl=300)  # Cache for 5 minutes
+def get_all_users():
+    """Return all users with their company information.
+    
+    Returns:
+        list[dict]: User records with id, username, email, role, company_name, created_at.
+    """
+    db = get_database()
+    if not db.connect():
+        return []
+    
+    try:
+        query = """
+        SELECT 
+            u.id,
+            u.username,
+            u.email,
+            u.role,
+            c.company_name,
+            u.created_at
+        FROM users u
+        LEFT JOIN companies c ON u.company_id = c.id
+        ORDER BY u.created_at DESC
+        """
+        
+        rows = db.fetch_query(query)
+        
+        return [{
+            'id': r[0],
+            'username': r[1],
+            'email': r[2],
+            'role': r[3],
+            'company_name': r[4],
+            'created_at': r[5]
+        } for r in rows]
+    finally:
+        db.disconnect()
+
+@st.cache_data(ttl=300)
+def get_user_details(user_id):
+    """Return detailed information for a specific user.
+    
+    Args:
+        user_id: User primary key.
+    
+    Returns:
+        dict|None: User details or None if not found.
+    """
+    db = get_database()
+    if not db.connect():
+        return None
+    
+    try:
+        query = """
+        SELECT id, username, email, role, company_id, created_at
+        FROM users
+        WHERE id = %s
+        """
+        
+        row = db.fetch_one(query, (user_id,))
+        
+        if row:
+            return {
+                'id': row[0],
+                'username': row[1],
+                'email': row[2],
+                'role': row[3],
+                'company_id': row[4],
+                'created_at': row[5]
+            }
+        return None
+    finally:
+        db.disconnect()
+
+@st.cache_data(ttl=600)  # Cache for 10 minutes (companies don't change often)
+def get_all_companies():
+    """Return all companies for dropdown selections.
+    
+    Returns:
+        list[dict]: Company records with id and company_name.
+    """
+    db = get_database()
+    if not db.connect():
+        return []
+    
+    try:
+        query = "SELECT id, company_name FROM companies ORDER BY company_name"
+        rows = db.fetch_query(query)
+        
+        return [{
+            'id': r[0],
+            'company_name': r[1]
+        } for r in rows]
+    finally:
+        db.disconnect()
+
+def check_username_exists(username):
+    """Check if a username already exists (not cached - needs to be real-time).
+    
+    Args:
+        username: Username to check.
+    
+    Returns:
+        bool: True if username exists, False otherwise.
+    """
+    db = get_database()
+    if not db.connect():
+        return False
+    
+    try:
+        query = "SELECT id FROM users WHERE username = %s"
+        result = db.fetch_one(query, (username,))
+        return result is not None
+    finally:
+        db.disconnect()
+
+def create_user(username, email, password_hash, role, company_id=None):
+    """Create a new user and clear relevant caches.
+    
+    Args:
+        username: Unique username.
+        email: User email.
+        password_hash: Hashed password.
+        role: User role (normal_user, manager, admin).
+        company_id: Optional company ID.
+    
+    Returns:
+        int|bool: New user ID if successful, False otherwise.
+    """
+    db = get_database()
+    if not db.connect():
+        return False
+    
+    try:
+        query = """
+        INSERT INTO users (username, email, password_hash, role, company_id)
+        VALUES (%s, %s, %s, %s, %s)
+        """
+        
+        result = db.execute_query(
+            query,
+            (username, email, password_hash, role, company_id),
+            return_id=True
+        )
+        
+        if result:
+            # Clear caches after successful insert
+            get_all_users.clear()
+            get_users_by_role.clear()
+            get_system_statistics.clear()
+        
+        return result
+    finally:
+        db.disconnect()
+
+def update_user(user_id, email, role, company_id=None, password_hash=None):
+    """Update user details and clear relevant caches.
+    
+    Args:
+        user_id: User ID to update.
+        email: New email.
+        role: New role.
+        company_id: New company ID (or None).
+        password_hash: Optional new password hash.
+    
+    Returns:
+        bool: True if successful, False otherwise.
+    """
+    db = get_database()
+    if not db.connect():
+        return False
+    
+    try:
+        query = "UPDATE users SET email = %s, role = %s, company_id = %s"
+        params = [email, role, company_id]
+        
+        if password_hash:
+            query += ", password_hash = %s"
+            params.append(password_hash)
+        
+        query += " WHERE id = %s"
+        params.append(user_id)
+        
+        result = db.execute_query(query, tuple(params))
+        
+        if result:
+            # Clear caches after successful update
+            get_all_users.clear()
+            get_user_details.clear()
+            get_users_by_role.clear()
+            get_system_statistics.clear()
+        
+        return result
+    finally:
+        db.disconnect()
+
+def delete_user(user_id):
+    """Delete a user and clear relevant caches.
+    
+    Args:
+        user_id: User ID to delete.
+    
+    Returns:
+        bool: True if successful, False otherwise.
+    """
+    db = get_database()
+    if not db.connect():
+        return False
+    
+    try:
+        query = "DELETE FROM users WHERE id = %s"
+        result = db.execute_query(query, (user_id,))
+        
+        if result:
+            # Clear caches after successful delete
+            get_all_users.clear()
+            get_user_details.clear()
+            get_users_by_role.clear()
+            get_system_statistics.clear()
+        
+        return result
+    finally:
+        db.disconnect()
+
+
+@st.cache_data(ttl=300)  # Cache for 5 minutes
+def get_all_companies_with_stats():
+    """Return all companies with user count, emission count, and total CO2e.
+    
+    Returns:
+        list[dict]: Company records with statistics.
+    """
+    db = get_database()
+    if not db.connect():
+        return []
+    
+    try:
+        query = """
+        SELECT 
+            c.id,
+            c.company_name,
+            c.company_code,
+            c.industry_sector,
+            c.verification_status,
+            c.created_at,
+            COUNT(DISTINCT u.id) as user_count,
+            COUNT(DISTINCT e.id) as emission_count,
+            COALESCE(SUM(e.co2_equivalent), 0) as total_co2e
+        FROM companies c
+        LEFT JOIN users u ON c.id = u.company_id
+        LEFT JOIN emissions_data e ON c.id = e.company_id
+        GROUP BY c.id, c.company_name, c.company_code, c.industry_sector, 
+                 c.verification_status, c.created_at
+        ORDER BY c.created_at DESC
+        """
+        
+        rows = db.fetch_query(query)
+        
+        return [{
+            'id': r[0],
+            'company_name': r[1],
+            'company_code': r[2],
+            'industry_sector': r[3],
+            'verification_status': r[4],
+            'created_at': r[5],
+            'user_count': r[6],
+            'emission_count': r[7],
+            'total_co2e': float(r[8])
+        } for r in rows]
+    finally:
+        db.disconnect()
+
+@st.cache_data(ttl=300)
+def get_company_details(company_id):
+    """Return detailed information for a specific company.
+    
+    Args:
+        company_id: Company primary key.
+    
+    Returns:
+        dict|None: Company details or None if not found.
+    """
+    db = get_database()
+    if not db.connect():
+        return None
+    
+    try:
+        query = """
+        SELECT id, company_name, company_code, industry_sector,
+               address, contact_email, verification_status, created_at
+        FROM companies
+        WHERE id = %s
+        """
+        
+        row = db.fetch_one(query, (company_id,))
+        
+        if row:
+            return {
+                'id': row[0],
+                'company_name': row[1],
+                'company_code': row[2],
+                'industry_sector': row[3],
+                'address': row[4],
+                'contact_email': row[5],
+                'verification_status': row[6],
+                'created_at': row[7]
+            }
+        return None
+    finally:
+        db.disconnect()
+
+@st.cache_data(ttl=300)
+def get_company_users(company_id):
+    """Return all users for a specific company.
+    
+    Args:
+        company_id: Company primary key.
+    
+    Returns:
+        list[dict]: User records with username, email, role.
+    """
+    db = get_database()
+    if not db.connect():
+        return []
+    
+    try:
+        query = """
+        SELECT username, email, role
+        FROM users
+        WHERE company_id = %s
+        ORDER BY username
+        """
+        
+        rows = db.fetch_query(query, (company_id,))
+        
+        return [{
+            'username': r[0],
+            'email': r[1],
+            'role': r[2]
+        } for r in rows]
+    finally:
+        db.disconnect()
+
+def check_company_code_exists(company_code, exclude_company_id=None):
+    """Check if a company code already exists (not cached - needs real-time check).
+    
+    Args:
+        company_code: Company code to check.
+        exclude_company_id: Optional company ID to exclude from check (for updates).
+    
+    Returns:
+        bool: True if code exists, False otherwise.
+    """
+    db = get_database()
+    if not db.connect():
+        return False
+    
+    try:
+        if exclude_company_id:
+            query = "SELECT id FROM companies WHERE company_code = %s AND id != %s"
+            result = db.fetch_one(query, (company_code, exclude_company_id))
+        else:
+            query = "SELECT id FROM companies WHERE company_code = %s"
+            result = db.fetch_one(query, (company_code,))
+        
+        return result is not None
+    finally:
+        db.disconnect()
+
+def get_company_emission_count(company_id):
+    """Get emission record count for a company (not cached - used for validation).
+    
+    Args:
+        company_id: Company primary key.
+    
+    Returns:
+        int: Number of emission records.
+    """
+    db = get_database()
+    if not db.connect():
+        return 0
+    
+    try:
+        query = "SELECT COUNT(*) FROM emissions_data WHERE company_id = %s"
+        result = db.fetch_one(query, (company_id,))
+        return result[0] if result else 0
+    finally:
+        db.disconnect()
+
+def create_company(company_name, company_code, industry_sector, 
+                   address=None, contact_email=None, verification_status='pending'):
+    """Create a new company and clear relevant caches.
+    
+    Args:
+        company_name: Company name.
+        company_code: Unique company code.
+        industry_sector: Industry sector.
+        address: Optional address.
+        contact_email: Optional contact email.
+        verification_status: Verification status (default: 'pending').
+    
+    Returns:
+        int|bool: New company ID if successful, False otherwise.
+    """
+    db = get_database()
+    if not db.connect():
+        return False
+    
+    try:
+        query = """
+        INSERT INTO companies (
+            company_name, company_code, industry_sector,
+            address, contact_email, verification_status
+        )
+        VALUES (%s, %s, %s, %s, %s, %s)
+        """
+        
+        result = db.execute_query(
+            query,
+            (company_name, company_code, industry_sector, 
+             address, contact_email, verification_status),
+            return_id=True
+        )
+        
+        if result:
+            # Clear relevant caches
+            get_all_companies.clear()
+            get_all_companies_with_stats.clear()
+            get_companies_by_status.clear()
+            get_system_statistics.clear()
+        
+        return result
+    finally:
+        db.disconnect()
+
+def update_company(company_id, company_name, company_code, industry_sector,
+                   address=None, contact_email=None, verification_status='pending'):
+    """Update company details and clear relevant caches.
+    
+    Args:
+        company_id: Company ID to update.
+        company_name: Updated company name.
+        company_code: Updated company code.
+        industry_sector: Updated industry sector.
+        address: Updated address.
+        contact_email: Updated contact email.
+        verification_status: Updated verification status.
+    
+    Returns:
+        bool: True if successful, False otherwise.
+    """
+    db = get_database()
+    if not db.connect():
+        return False
+    
+    try:
+        query = """
+        UPDATE companies 
+        SET company_name = %s,
+            company_code = %s,
+            industry_sector = %s,
+            address = %s,
+            contact_email = %s,
+            verification_status = %s
+        WHERE id = %s
+        """
+        
+        result = db.execute_query(
+            query,
+            (company_name, company_code, industry_sector,
+             address, contact_email, verification_status, company_id)
+        )
+        
+        if result:
+            # Clear relevant caches
+            get_company_info.clear()
+            get_company_details.clear()
+            get_all_companies.clear()
+            get_all_companies_with_stats.clear()
+            get_companies_by_status.clear()
+            get_system_statistics.clear()
+        
+        return result
+    finally:
+        db.disconnect()
+
+def delete_company(company_id):
+    """Delete a company and clear relevant caches.
+    
+    Args:
+        company_id: Company ID to delete.
+    
+    Returns:
+        bool: True if successful, False otherwise.
+    """
+    db = get_database()
+    if not db.connect():
+        return False
+    
+    try:
+        query = "DELETE FROM companies WHERE id = %s"
+        result = db.execute_query(query, (company_id,))
+        
+        if result:
+            # Clear relevant caches
+            get_company_info.clear()
+            get_company_details.clear()
+            get_all_companies.clear()
+            get_all_companies_with_stats.clear()
+            get_companies_by_status.clear()
+            get_system_statistics.clear()
+        
+        return result
+    finally:
+        db.disconnect()
