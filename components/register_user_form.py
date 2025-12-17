@@ -159,9 +159,9 @@ def render_register_form():
         # Submit buttons
         col_a, col_b = st.columns(2)
         with col_a:
-            register_btn = st.form_submit_button("✅ Register", type="primary")
+            register_btn = st.form_submit_button("✅ Register", type="primary", use_container_width=True)
         with col_b:
-            back_btn = st.form_submit_button("🔙 Back to Login")
+            back_btn = st.form_submit_button("🔙 Back to Login", use_container_width=True)
         
         if back_btn:
             st.session_state.show_register = False

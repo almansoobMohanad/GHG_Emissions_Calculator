@@ -28,7 +28,7 @@ st.set_page_config(page_title="Admin Panel", page_icon="⚙️", layout="wide")
 with st.sidebar:
     show_permission_badge()
     st.write(f"**User:** {st.session_state.username}")
-    if st.button("🚪 Logout", type="secondary", width="stretch"):
+    if st.button("🚪 Logout", type="secondary", use_container_width=True):
         for key in list(st.session_state.keys()):
             del st.session_state[key]
         st.switch_page("main.py")
@@ -117,7 +117,7 @@ if pending_companies:
                     "✅ Approve Company", 
                     key=f"approve_{company['id']}", 
                     type="primary", 
-                    width="stretch",
+                    use_container_width=True,
                     help="Verify this company and grant full access"
                 ):
                     # Update company status to verified
@@ -142,7 +142,7 @@ if pending_companies:
                 if st.button(
                     "❌ Reject Company", 
                     key=f"reject_{company['id']}", 
-                    width="stretch",
+                    use_container_width=True,
                     help="Reject this company registration"
                 ):
                     # Update company status to rejected
@@ -177,19 +177,19 @@ action_col1, action_col2, action_col3 = st.columns(3)
 with action_col1:
     st.markdown("### 👥 User Management")
     st.markdown("Manage user accounts, roles, and permissions")
-    if st.button("→ Go to User Management", width="stretch", type="primary"):
+    if st.button("→ Go to User Management", use_container_width=True, type="primary"):
         st.switch_page("pages/06_👥_User_Management.py")
 
 with action_col2:
     st.markdown("### 🏢 Company Management")
     st.markdown("Manage companies and verification status")
-    if st.button("→ Go to Company Management", width="stretch", type="primary"):
+    if st.button("→ Go to Company Management", use_container_width=True, type="primary"):
         st.switch_page("pages/07_🏢_Company_Management.py")
 
 with action_col3:
     st.markdown("### 📊 View All Data")
     st.markdown("View emissions data across all companies")
-    if st.button("→ View All Emissions", width="stretch", type="primary"):
+    if st.button("→ View All Emissions", use_container_width=True, type="primary"):
         st.switch_page("pages/03_📊_View_Data.py")
 
 st.divider()
@@ -211,7 +211,7 @@ if recent_records:
             "Status": record['verification_status']
         })
     
-    st.dataframe(activity_data, width="stretch", hide_index=True)
+    st.dataframe(activity_data, use_container_width=True, hide_index=True)
 else:
     st.info("No recent activity to display.")
 

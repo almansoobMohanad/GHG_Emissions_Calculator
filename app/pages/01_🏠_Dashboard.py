@@ -41,7 +41,7 @@ with st.sidebar:
     
     st.divider()
     
-    if st.button("🚪 Logout", type="secondary", width="stretch"):
+    if st.button("🚪 Logout", type="secondary", use_container_width=True):
         for key in list(st.session_state.keys()):
             del st.session_state[key]
         st.switch_page("main.py")
@@ -159,23 +159,23 @@ if st.session_state.company_id:
         
         # Show actions based on permissions
         if can_user('can_add_emissions'):
-            if st.button("➕ Add New Emission", width="stretch", type="primary"):
+            if st.button("➕ Add New Emission", use_container_width=True, type="primary"):
                 st.switch_page("pages/02_➕_Add_Emissions.py")
         
         if can_user('can_view_data'):
-            if st.button("📊 View All Data", width="stretch"):
+            if st.button("📊 View All Data", use_container_width=True):
                 st.switch_page("pages/03_📊_View_Data.py")
         
         if can_user('can_generate_reports'):
-            if st.button("📋 Generate Report", width="stretch"):
+            if st.button("📋 Generate Report", use_container_width=True):
                 st.switch_page("pages/04_📋_Reports.py")
         
         if can_user('can_verify_data'):
-            if st.button("✅ Verify Data", width="stretch"):
+            if st.button("✅ Verify Data", use_container_width=True):
                 st.switch_page("pages/05_✅_Verify_Data.py")
         
         if can_user('can_manage_users'):
-            if st.button("⚙️ Admin Panel", width="stretch"):
+            if st.button("⚙️ Admin Panel", use_container_width=True):
                 st.switch_page("pages/05_⚙️_Admin_Panel.py")
 else:
     st.warning("⚠️ No company assigned to your account. Please contact an administrator.")
@@ -218,7 +218,7 @@ if st.session_state.company_id:
                     color_discrete_sequence=px.colors.qualitative.Set2
                 )
                 fig_pie.update_traces(textposition='inside', textinfo='percent+label')
-                st.plotly_chart(fig_pie, width="stretch")
+                st.plotly_chart(fig_pie, use_container_width=True)
         
         with chart_col2:
             if period_data:
@@ -238,7 +238,7 @@ if st.session_state.company_id:
                     yaxis_title="CO₂e (kg)",
                     hovermode='x unified'
                 )
-                st.plotly_chart(fig_line, width="stretch")
+                st.plotly_chart(fig_line, use_container_width=True)
         
         if source_data:
             sorted_sources = sorted(source_data.items(), key=lambda x: x[1], reverse=True)[:10]
@@ -252,6 +252,6 @@ if st.session_state.company_id:
                 color_continuous_scale='Viridis'
             )
             fig_bar.update_layout(showlegend=False, height=400)
-            st.plotly_chart(fig_bar, width="stretch")
+            st.plotly_chart(fig_bar, use_container_width=True)
     else:
         st.info("📊 Charts will appear here once you add emission data.")
