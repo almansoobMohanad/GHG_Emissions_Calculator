@@ -12,7 +12,7 @@ from core.permissions import check_page_permission, show_permission_badge
 from core.cache import get_unverified_emissions, verify_emission, reject_emission
 
 # Check permissions (only managers and admins can access)
-check_page_permission('05_✅_Verify_Data.py')
+check_page_permission('04_✅_Verify_Data.py')
 
 st.set_page_config(page_title="Verify Data", page_icon="✅", layout="wide")
 
