@@ -1067,3 +1067,53 @@ def get_unverified_count(company_id):
         return result[0] if result else 0
     finally:
         db.disconnect()
+
+
+# Add this function to cache.py
+
+@st.cache_data(ttl=300)
+def get_sedg_ghg_data(company_id, reporting_period):
+    """Get GHG emissions data for SEDG report.
+    
+    Args:
+        company_id: Company primary key.
+        reporting_period: Year (e.g., "2024") or period.
+    
+    Returns:
+        dict: GHG emissions by scope for the period.
+    """
+    db = get_database()
+    if not db.connect():
+        return {'scope_1': 0, 'scope_2': 0, 'scope_3': 0}
+    
+    try:
+        query = """
+        SELECT s.scope_number, SUM(e.co2_equivalent) as total
+        FROM emissions_data e
+        LEFT JOIN ghg_emission_sources src ON e.emission_source_id = src.id
+        LEFT JOIN ghg_categories c ON src.category_id = c.id
+        LEFT JOIN ghg_scopes s ON c.scope_id = s.id
+        WHERE e.company_id = %s 
+        AND e.reporting_period LIKE %s
+        AND e.verification_status = 'verified'
+        GROUP BY s.scope_number
+        """
+        
+        # Match periods starting with the year (e.g., "2024%" matches "2024", "2024-Q1", etc.)
+        period_pattern = f"{reporting_period}%"
+        rows = db.fetch_query(query, (company_id, period_pattern))
+        
+        result = {'scope_1': 0, 'scope_2': 0, 'scope_3': 0}
+        for row in rows:
+            scope_num = row[0]
+            emissions = float(row[1] or 0) / 1000  # Convert to metric tonnes
+            if scope_num == 1:
+                result['scope_1'] = emissions
+            elif scope_num == 2:
+                result['scope_2'] = emissions
+            elif scope_num == 3:
+                result['scope_3'] = emissions
+        
+        return result
+    finally:
+        db.disconnect()
