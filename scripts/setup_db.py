@@ -116,7 +116,7 @@ class DatabaseSetup:
                 CREATE TABLE IF NOT EXISTS ghg_categories (
                     id INT AUTO_INCREMENT PRIMARY KEY,
                     scope_id INT NOT NULL,
-                    category_code VARCHAR(20) UNIQUE NOT NULL,
+                    category_code VARCHAR(50) UNIQUE NOT NULL,
                     category_name VARCHAR(200) NOT NULL,
                     description TEXT NULL,
                     is_active BOOLEAN DEFAULT TRUE,
@@ -132,7 +132,7 @@ class DatabaseSetup:
                 CREATE TABLE IF NOT EXISTS ghg_emission_sources (
                     id INT AUTO_INCREMENT PRIMARY KEY,
                     category_id INT NOT NULL,
-                    source_code VARCHAR(20) UNIQUE NOT NULL,
+                    source_code VARCHAR(50) UNIQUE NOT NULL,
                     source_name VARCHAR(200) NOT NULL,
                     emission_factor DECIMAL(15,8) NOT NULL,
                     unit VARCHAR(50) NOT NULL,
