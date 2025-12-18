@@ -905,3 +905,165 @@ def get_company_emissions_for_analytics(company_id):
         } for r in rows]
     finally:
         db.disconnect()
+
+@st.cache_data(ttl=60)  # Cache for 1 minute (data changes frequently)
+def get_unverified_emissions(company_id):
+    """Return unverified emissions for a company.
+    
+    Args:
+        company_id: Company primary key.
+    
+    Returns:
+        list[dict]: Unverified emission records with all details.
+    """
+    db = get_database()
+    if not db.connect():
+        return []
+    
+    try:
+        query = """
+        SELECT 
+            e.id,
+            e.reporting_period,
+            e.created_at,
+            s.scope_number,
+            s.scope_name,
+            c.category_name,
+            src.source_name,
+            src.source_code,
+            e.activity_data,
+            src.unit,
+            e.emission_factor,
+            e.co2_equivalent,
+            e.data_source,
+            e.calculation_method,
+            e.notes,
+            u.username as entered_by
+        FROM emissions_data e
+        JOIN ghg_emission_sources src ON e.emission_source_id = src.id
+        JOIN ghg_categories c ON src.category_id = c.id
+        JOIN ghg_scopes s ON c.scope_id = s.id
+        JOIN users u ON e.user_id = u.id
+        WHERE e.company_id = %s 
+        AND e.verification_status = 'unverified'
+        ORDER BY e.created_at DESC
+        """
+        
+        rows = db.fetch_query(query, (company_id,))
+        
+        return [{
+            'id': r[0],
+            'reporting_period': r[1],
+            'created_at': r[2],
+            'scope_number': r[3],
+            'scope_name': r[4],
+            'category_name': r[5],
+            'source_name': r[6],
+            'source_code': r[7],
+            'activity_data': float(r[8]),
+            'unit': r[9],
+            'emission_factor': float(r[10]),
+            'co2_equivalent': float(r[11]),
+            'data_source': r[12],
+            'calculation_method': r[13],
+            'notes': r[14],
+            'entered_by': r[15]
+        } for r in rows]
+    finally:
+        db.disconnect()
+
+
+def verify_emission(emission_id):
+    """Verify an emission entry and clear relevant caches.
+    
+    Args:
+        emission_id: Emission entry ID to verify.
+    
+    Returns:
+        bool: True if successful, False otherwise.
+    """
+    db = get_database()
+    if not db.connect():
+        return False
+    
+    try:
+        query = """
+        UPDATE emissions_data 
+        SET verification_status = 'verified'
+        WHERE id = %s
+        """
+        
+        result = db.execute_query(query, (emission_id,))
+        
+        if result:
+            # Clear relevant caches
+            get_unverified_emissions.clear()
+            get_emissions_data.clear()
+            get_emissions_summary.clear()
+            get_company_emissions_for_analytics.clear()
+            get_recent_activity.clear()
+        
+        return result
+    finally:
+        db.disconnect()
+
+
+def reject_emission(emission_id):
+    """Reject an emission entry and clear relevant caches.
+    
+    Args:
+        emission_id: Emission entry ID to reject.
+    
+    Returns:
+        bool: True if successful, False otherwise.
+    """
+    db = get_database()
+    if not db.connect():
+        return False
+    
+    try:
+        query = """
+        UPDATE emissions_data 
+        SET verification_status = 'rejected'
+        WHERE id = %s
+        """
+        
+        result = db.execute_query(query, (emission_id,))
+        
+        if result:
+            # Clear relevant caches
+            get_unverified_emissions.clear()
+            get_emissions_data.clear()
+            get_emissions_summary.clear()
+            get_company_emissions_for_analytics.clear()
+            get_recent_activity.clear()
+        
+        return result
+    finally:
+        db.disconnect()
+
+
+def get_unverified_count(company_id):
+    """Get count of unverified emissions for a company.
+    
+    Args:
+        company_id: Company primary key.
+    
+    Returns:
+        int: Number of unverified emissions.
+    """
+    db = get_database()
+    if not db.connect():
+        return 0
+    
+    try:
+        query = """
+        SELECT COUNT(*) 
+        FROM emissions_data 
+        WHERE company_id = %s AND verification_status = 'unverified'
+        """
+        
+        result = db.fetch_one(query, (company_id,))
+        return result[0] if result else 0
+    finally:
+        db.disconnect()
