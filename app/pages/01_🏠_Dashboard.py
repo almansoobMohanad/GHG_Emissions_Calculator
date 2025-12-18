@@ -168,11 +168,11 @@ if st.session_state.company_id:
         
         if can_user('can_generate_reports'):
             if st.button("📋 Generate Report", use_container_width=True):
-                st.switch_page("pages/04_📋_Reports.py")
+                st.switch_page("pages/08_📋_SEDG_Report.py")
         
         if can_user('can_verify_data'):
             if st.button("✅ Verify Data", use_container_width=True):
-                st.switch_page("pages/05_✅_Verify_Data.py")
+                st.switch_page("pages/04_✅_Verify_Data.py")
         
         if can_user('can_manage_users'):
             if st.button("⚙️ Admin Panel", use_container_width=True):
