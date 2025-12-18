@@ -161,7 +161,7 @@ class DatabaseSetup:
                     co2_equivalent DECIMAL(15,4) NOT NULL,
                     data_source VARCHAR(255) NULL,
                     calculation_method VARCHAR(100) NULL,
-                    verification_status ENUM('unverified', 'verified', 'rejected') DEFAULT 'verified',
+                    verification_status ENUM('unverified', 'verified', 'rejected') DEFAULT 'unverified',
                     verified_by INT NULL,
                     verified_at DATETIME NULL,
                     notes TEXT NULL,
