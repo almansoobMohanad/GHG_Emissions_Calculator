@@ -1,5 +1,6 @@
 """
 SEDG Report - Simplified ESG Disclosure Guide Report Generator
+Complete implementation matching official SEDG v2 template with ALL fields
 """
 import streamlit as st
 import sys
@@ -12,7 +13,7 @@ from core.permissions import check_page_permission, show_permission_badge
 from core.cache import get_company_info, get_sedg_ghg_data
 from core.sedg_pdf import generate_sedg_pdf
 
-# Check permissions (managers and admins only)
+# Check permissions
 check_page_permission('08_📋_SEDG_Report.py')
 
 st.set_page_config(page_title="SEDG Report", page_icon="📋", layout="wide")
@@ -27,518 +28,642 @@ with st.sidebar:
         st.switch_page("main.py")
 
 st.title("📋 SEDG Report Generator")
-st.markdown("**Simplified ESG Disclosure Guide (SEDG) Template**")
+st.markdown("**Simplified ESG Disclosure Guide (SEDG) Version 2**")
 st.divider()
 
-# Check company assignment
+# Check company
 if not st.session_state.company_id:
-    st.error("❌ No company assigned to your account.")
+    st.error("❌ No company assigned.")
     st.stop()
 
-# Initialize session state for SEDG data
-if 'sedg_data' not in st.session_state:
-    st.session_state.sedg_data = {
-        'reporting_period': str(datetime.now().year),
-        'environmental': {},
-        'social': {},
-        'governance': {}
+# Initialize session state with complete SEDG fields
+def init_sedg():
+    prefix = 'sedg_'
+    defaults = {
+        # General Information
+        f'{prefix}period': str(datetime.now().year),
+        f'{prefix}entities_included': '',
+        f'{prefix}locations_included': '',
+        
+        # E1.1-E1.2 - GHG (auto-filled from system)
+        # E1.3-E1.4 - GHG Reduction
+        f'{prefix}e13_scope1_reduction': 0.0,
+        f'{prefix}e14_scope2_reduction': 0.0,
+        # E1.5 - Scope 3 Total
+        f'{prefix}e15_scope3_total': 0.0,
+        # E1.6 - Scope 3 Reduction
+        f'{prefix}e16_scope3_reduction': 0.0,
+        # E1.7 - GHG Intensity
+        f'{prefix}e17_intensity': 0.0,
+        
+        # E2.1 - Energy Consumption (Basic)
+        f'{prefix}e21_renewable': 0.0,
+        f'{prefix}e21_nonrenewable': 0.0,
+        f'{prefix}e21_electricity': 0.0,
+        f'{prefix}e21_heating': 0.0,
+        f'{prefix}e21_cooling': 0.0,
+        f'{prefix}e21_steam': 0.0,
+        
+        # E2.2 - Energy Consumption Reduction (Intermediate)
+        f'{prefix}e22_renewable_reduction': 0.0,
+        f'{prefix}e22_nonrenewable_reduction': 0.0,
+        f'{prefix}e22_electricity_reduction': 0.0,
+        f'{prefix}e22_heating_reduction': 0.0,
+        f'{prefix}e22_cooling_reduction': 0.0,
+        f'{prefix}e22_steam_reduction': 0.0,
+        
+        # E3.1 - Total Water Withdrawn (Basic)
+        f'{prefix}e31_purchased': 0.0,
+        f'{prefix}e31_surface': 0.0,
+        f'{prefix}e31_ground': 0.0,
+        f'{prefix}e31_sea': 0.0,
+        f'{prefix}e31_produced': 0.0,
+        
+        # E3.2 - Water Reduction (Intermediate)
+        f'{prefix}e32_reduction': 0.0,
+        
+        # E4.1 - Total Waste (Basic)
+        f'{prefix}e41_generated': 0.0,
+        f'{prefix}e41_diverted': 0.0,
+        f'{prefix}e41_disposed': 0.0,
+        
+        # E4.2 - Waste Breakdown (Intermediate)
+        f'{prefix}e42_haz_gen': 0.0,
+        f'{prefix}e42_haz_div': 0.0,
+        f'{prefix}e42_haz_disp': 0.0,
+        f'{prefix}e42_nonhaz_gen': 0.0,
+        f'{prefix}e42_nonhaz_div': 0.0,
+        f'{prefix}e42_nonhaz_disp': 0.0,
+        f'{prefix}e42_sector_gen': 0.0,
+        f'{prefix}e42_sector_div': 0.0,
+        f'{prefix}e42_sector_disp': 0.0,
+        f'{prefix}e42_material_gen': 0.0,
+        f'{prefix}e42_material_div': 0.0,
+        f'{prefix}e42_material_disp': 0.0,
+        
+        # E4.3 - Waste Diversion Methods (Advanced)
+        f'{prefix}e43_haz_reuse': 0.0,
+        f'{prefix}e43_haz_recycle': 0.0,
+        f'{prefix}e43_haz_recovery': 0.0,
+        f'{prefix}e43_nonhaz_reuse': 0.0,
+        f'{prefix}e43_nonhaz_recycle': 0.0,
+        f'{prefix}e43_nonhaz_recovery': 0.0,
+        
+        # E4.4 - Waste Disposal Methods (Advanced)
+        f'{prefix}e44_haz_incin_recovery': 0.0,
+        f'{prefix}e44_haz_incin_no_recovery': 0.0,
+        f'{prefix}e44_haz_landfill': 0.0,
+        f'{prefix}e44_haz_other': 0.0,
+        f'{prefix}e44_nonhaz_incin_recovery': 0.0,
+        f'{prefix}e44_nonhaz_incin_no_recovery': 0.0,
+        f'{prefix}e44_nonhaz_landfill': 0.0,
+        f'{prefix}e44_nonhaz_other': 0.0,
+        
+        # E5.1 - Materials (Basic)
+        f'{prefix}e51_materials': '',
+        # E5.2 - Recycled Materials (Advanced)
+        f'{prefix}e52_recycled_pct': 0.0,
+        
+        # S1.1 - Child & Forced Labour Incidents (Basic)
+        f'{prefix}s11_child_incidents': 0,
+        f'{prefix}s11_child_nature': '',
+        f'{prefix}s11_forced_incidents': 0,
+        f'{prefix}s11_forced_nature': '',
+        
+        # S1.2 - Risk of Child & Forced Labour (Intermediate)
+        f'{prefix}s12_child_risk_ops': '',
+        f'{prefix}s12_forced_risk_ops': '',
+        
+        # S2.1 - Training (Basic)
+        f'{prefix}s21_training_hours': 0.0,
+        
+        # S2.2 - Employee Data (Intermediate)
+        f'{prefix}s22_num_employees': 0,
+        f'{prefix}s22_turnover': 0.0,
+        
+        # S2.3 - Minimum Wage (Basic)
+        f'{prefix}s23_min_wage_pct': 0.0,
+        
+        # S3.1 - Diversity - Employees (Basic)
+        f'{prefix}s31_emp_female': 0.0,
+        f'{prefix}s31_emp_age': '',
+        
+        # S3.2 - Diversity - Directors (Intermediate)
+        f'{prefix}s32_dir_female': 0.0,
+        f'{prefix}s32_dir_age': '',
+        
+        # S4.1 - Health & Safety Incidents (Basic)
+        f'{prefix}s41_fatalities': 0,
+        f'{prefix}s41_injuries': 0,
+        
+        # S4.2 - H&S Training (Intermediate)
+        f'{prefix}s42_hs_trained_num': 0,
+        f'{prefix}s42_hs_trained_pct': 0.0,
+        
+        # S5.1 - Community Investment (Basic)
+        f'{prefix}s51_community_invest': 0.0,
+        
+        # S5.2 - Community Impact (Advanced)
+        f'{prefix}s52_negative_impact': '',
+        
+        # G1.1 - Board Composition (Basic)
+        f'{prefix}g11_num_directors': 0,
+        
+        # G1.2 - Governance Structure (Intermediate)
+        f'{prefix}g12_structure': '',
+        
+        # G2.1 - Policies (Basic)
+        f'{prefix}g21_policies': '',
+        
+        # G3.1 - Audit (Basic)
+        f'{prefix}g31_audit_year': datetime.now().year,
+        
+        # G3.2 - Operations Risks (Intermediate)
+        f'{prefix}g32_ops_risks': '',
+        
+        # G3.3 - Sustainability Risks (Advanced)
+        f'{prefix}g33_sustain_risks': '',
+        
+        # G4.1 - Corruption Incidents (Basic)
+        f'{prefix}g41_corrupt_incidents': 0,
+        f'{prefix}g41_corrupt_nature': '',
+        
+        # G4.2 - Anti-corruption Training (Intermediate)
+        f'{prefix}g42_anticorrupt_num': 0,
+        f'{prefix}g42_anticorrupt_pct': 0.0,
+        
+        # G4.3 - Corruption Risks (Advanced)
+        f'{prefix}g43_corrupt_risks': '',
+        
+        # G5.1 - Privacy (Intermediate)
+        f'{prefix}g51_privacy_complaints': 0,
+        f'{prefix}g51_privacy_nature': '',
     }
+    
+    for key, val in defaults.items():
+        if key not in st.session_state:
+            st.session_state[key] = val
+ 
+init_sedg()
 
-# Get company info
 company = get_company_info(st.session_state.company_id)
 if not company:
     st.error("❌ Unable to load company information.")
     st.stop()
 
-# ============================================================================
-# SECTION 1: GENERAL INFORMATION (Auto-filled)
-# ============================================================================
+# General Info
 st.header("📊 General Information")
-st.info("ℹ️ This information is automatically filled from your company profile")
+st.info("ℹ️ Auto-filled from your company profile")
 
 col1, col2 = st.columns(2)
-
 with col1:
     st.markdown(f"""
     **Name of Organisation:** {company['company_name']}  
     **Location of Headquarters:** {company.get('address', 'Not specified')}  
-    **Industry Sector:** {company['industry_sector']}
+    **Industry:** {company['industry_sector']}
     """)
 
 with col2:
-    # Let user select reporting period
-    reporting_period = st.selectbox(
-        "Disclosure Period",
-        options=[str(year) for year in range(datetime.now().year, datetime.now().year - 5, -1)],
-        index=0,
-        key='sedg_reporting_period'
-    )
-    st.session_state.sedg_data['reporting_period'] = reporting_period
-    
+    st.selectbox("Disclosure Period", 
+                options=[str(y) for y in range(datetime.now().year, datetime.now().year-5, -1)],
+                key='sedg_period')
     disclosure_date = st.date_input("Date of Disclosure", datetime.now())
     
-    st.markdown(f"""
-    **Entities Included:** {company['company_name']}  
-    **Locations Included:** {company.get('address', 'Not specified')}
-    """)
-
-st.caption("💡 This data report represents our company's disclosures as guided by the Simplified ESG Disclosure Guide (SEDG).")
+col3, col4 = st.columns(2)
+with col3:
+    st.text_area("Entities Included", key='sedg_entities_included',
+                placeholder="List all entities/subsidiaries included in this report", height=80)
+with col4:
+    st.text_area("Locations Included", key='sedg_locations_included',
+                placeholder="List all locations/countries included in this report", height=80)
 
 st.divider()
 
-# ============================================================================
-# TABS FOR ENVIRONMENT, SOCIAL, GOVERNANCE
-# ============================================================================
-tab1, tab2, tab3 = st.tabs(["🌍 Environmental Disclosures", "👥 Social Disclosures", "⚖️ Governance Disclosures"])
+# Get GHG data
+reporting_period = st.session_state.sedg_period
+ghg_data = get_sedg_ghg_data(st.session_state.company_id, reporting_period)
 
-# ============================================================================
-# TAB 1: ENVIRONMENTAL DISCLOSURES
-# ============================================================================
+# Tabs
+tab1, tab2, tab3 = st.tabs(["🌍 Environmental", "👥 Social", "⚖️ Governance"])
+
+# ENVIRONMENTAL
 with tab1:
     st.subheader("🌍 Environmental Disclosures")
-    st.caption("Fields marked with * are auto-calculated from your emissions data")
     
-    # Get GHG data for auto-fill
-    ghg_data = get_sedg_ghg_data(st.session_state.company_id, reporting_period)
-
-    
-    # SEDG-E1.1: GHG Emissions (Auto-filled)
-    st.markdown("### SEDG-E1.1: GHG Emissions")
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        st.metric("Total Scope 1 GHG emissions*", f"{ghg_data['scope_1']:.2f} tonnes CO₂e", 
-                 help="Auto-calculated from verified emissions data")
-    with col2:
-        st.metric("Total Scope 2 GHG emissions*", f"{ghg_data['scope_2']:.2f} tonnes CO₂e",
-                 help="Auto-calculated from verified emissions data")
-    with col3:
-        st.metric("Total Scope 3 GHG emissions*", f"{ghg_data['scope_3']:.2f} tonnes CO₂e",
-                 help="Auto-calculated from verified emissions data")
-    
-    st.divider()
-    
-    # SEDG-E1.2: Energy Consumption
-    st.markdown("### SEDG-E1.2: Energy Consumption")
-    
-    col1, col2 = st.columns(2)
-    with col1:
-        st.session_state.sedg_data['environmental']['renewable_fuel'] = st.number_input(
-            "Renewable fuel sources (joules/watthours)",
-            min_value=0.0,
-            value=st.session_state.sedg_data['environmental'].get('renewable_fuel', 0.0),
-            key='env_renewable_fuel'
-        )
-        
-        st.session_state.sedg_data['environmental']['non_renewable_fuel'] = st.number_input(
-            "Non-renewable fuel sources (joules/watthours)",
-            min_value=0.0,
-            value=st.session_state.sedg_data['environmental'].get('non_renewable_fuel', 0.0),
-            key='env_non_renewable_fuel'
-        )
-        
-        st.session_state.sedg_data['environmental']['electricity'] = st.number_input(
-            "Electricity (joules/watthours)",
-            min_value=0.0,
-            value=st.session_state.sedg_data['environmental'].get('electricity', 0.0),
-            key='env_electricity'
-        )
-    
-    with col2:
-        st.session_state.sedg_data['environmental']['heating'] = st.number_input(
-            "Heating (joules/watthours) - if applicable",
-            min_value=0.0,
-            value=st.session_state.sedg_data['environmental'].get('heating', 0.0),
-            key='env_heating'
-        )
-        
-        st.session_state.sedg_data['environmental']['cooling'] = st.number_input(
-            "Cooling (joules/watthours) - if applicable",
-            min_value=0.0,
-            value=st.session_state.sedg_data['environmental'].get('cooling', 0.0),
-            key='env_cooling'
-        )
-        
-        st.session_state.sedg_data['environmental']['steam'] = st.number_input(
-            "Steam (joules/watthours) - if applicable",
-            min_value=0.0,
-            value=st.session_state.sedg_data['environmental'].get('steam', 0.0),
-            key='env_steam'
-        )
-    
-    st.divider()
-    
-    # SEDG-E2: Water Consumption
-    st.markdown("### SEDG-E2: Water Consumption")
-    
-    col1, col2 = st.columns(2)
-    with col1:
-        st.session_state.sedg_data['environmental']['purchased_water'] = st.number_input(
-            "Purchased water (litres)",
-            min_value=0.0,
-            value=st.session_state.sedg_data['environmental'].get('purchased_water', 0.0),
-            key='env_purchased_water'
-        )
-        
-        st.session_state.sedg_data['environmental']['surface_water'] = st.number_input(
-            "Surface water (litres) - if applicable",
-            min_value=0.0,
-            value=st.session_state.sedg_data['environmental'].get('surface_water', 0.0),
-            key='env_surface_water'
-        )
-        
-        st.session_state.sedg_data['environmental']['groundwater'] = st.number_input(
-            "Groundwater (litres) - if applicable",
-            min_value=0.0,
-            value=st.session_state.sedg_data['environmental'].get('groundwater', 0.0),
-            key='env_groundwater'
-        )
-    
-    with col2:
-        st.session_state.sedg_data['environmental']['seawater'] = st.number_input(
-            "Seawater (litres) - if applicable",
-            min_value=0.0,
-            value=st.session_state.sedg_data['environmental'].get('seawater', 0.0),
-            key='env_seawater'
-        )
-        
-        st.session_state.sedg_data['environmental']['produced_water'] = st.number_input(
-            "Produced water (litres) - if applicable",
-            min_value=0.0,
-            value=st.session_state.sedg_data['environmental'].get('produced_water', 0.0),
-            key='env_produced_water'
-        )
-    
-    st.divider()
-    
-    # SEDG-E3: Waste
-    st.markdown("### SEDG-E3: Total Waste")
-    
+    # E1.1-E1.2 - GHG Emissions
+    st.markdown("### SEDG-E1.1 & E1.2: GHG Emissions (Basic)")
+    st.info("Auto-filled from your emissions data")
     col1, col2, col3 = st.columns(3)
     with col1:
-        st.session_state.sedg_data['environmental']['waste_generated'] = st.number_input(
-            "Waste Generated (metric tonnes)",
-            min_value=0.0,
-            value=st.session_state.sedg_data['environmental'].get('waste_generated', 0.0),
-            key='env_waste_generated'
-        )
-    
+        st.metric("Scope 1*", f"{ghg_data['scope_1']:.2f} tonnes")
     with col2:
-        st.session_state.sedg_data['environmental']['waste_diverted'] = st.number_input(
-            "Waste Diverted from disposal (metric tonnes)",
-            min_value=0.0,
-            value=st.session_state.sedg_data['environmental'].get('waste_diverted', 0.0),
-            key='env_waste_diverted'
-        )
-    
+        st.metric("Scope 2*", f"{ghg_data['scope_2']:.2f} tonnes")
     with col3:
-        st.session_state.sedg_data['environmental']['waste_disposed'] = st.number_input(
-            "Waste Directed to disposal (metric tonnes)",
-            min_value=0.0,
-            value=st.session_state.sedg_data['environmental'].get('waste_disposed', 0.0),
-            key='env_waste_disposed'
-        )
+        st.metric("Scope 3*", f"{ghg_data['scope_3']:.2f} tonnes")
     
-    st.caption("💡 Complete waste breakdown will be included in the full report")
+    st.divider()
+    
+    # E1.3-E1.4 - GHG Reduction
+    st.markdown("### SEDG-E1.3 & E1.4: GHG Emissions Reduction (Intermediate)")
+    col1, col2 = st.columns(2)
+    with col1:
+        st.number_input("Scope 1 reduction (tonnes)", min_value=0.0, key='sedg_e13_scope1_reduction')
+    with col2:
+        st.number_input("Scope 2 reduction (tonnes)", min_value=0.0, key='sedg_e14_scope2_reduction')
+    
+    st.divider()
+    
+    # E1.5 - Scope 3 Total
+    st.markdown("### SEDG-E1.5: Total Scope 3 GHG Emissions (Advanced)")
+    st.number_input("Total Scope 3 emissions (tonnes)", min_value=0.0, key='sedg_e15_scope3_total',
+                   help="Total Scope 3 GHG emissions")
+    
+    st.divider()
+    
+    # E1.6 - Scope 3 Reduction
+    st.markdown("### SEDG-E1.6: Scope 3 Reduction (Advanced)")
+    st.number_input("Scope 3 reduction (tonnes)", min_value=0.0, key='sedg_e16_scope3_reduction')
+    
+    st.divider()
+    
+    # E1.7 - GHG Intensity
+    st.markdown("### SEDG-E1.7: Total Scope 1 and 2 GHG Intensity (Advanced)")
+    st.number_input("GHG intensity (tonnes CO2e per unit)", min_value=0.0, key='sedg_e17_intensity',
+                   help="Total Scope 1+2 emissions per revenue/production unit")
+    
+    st.divider()
+    
+    # E2.1 - Energy Consumption
+    st.markdown("### SEDG-E2.1: Energy Consumption (Basic)")
+    col1, col2 = st.columns(2)
+    with col1:
+        st.number_input("Renewable fuel sources (J/Wh)", min_value=0.0, key='sedg_e21_renewable')
+        st.number_input("Non-renewable fuel sources (J/Wh)", min_value=0.0, key='sedg_e21_nonrenewable')
+        st.number_input("Electricity (J/Wh)", min_value=0.0, key='sedg_e21_electricity')
+    with col2:
+        st.number_input("Heating (J/Wh)", min_value=0.0, key='sedg_e21_heating')
+        st.number_input("Cooling (J/Wh)", min_value=0.0, key='sedg_e21_cooling')
+        st.number_input("Steam (J/Wh)", min_value=0.0, key='sedg_e21_steam')
+    
+    st.divider()
+    
+    # E2.2 - Energy Consumption Reduction
+    st.markdown("### SEDG-E2.2: Energy Consumption Reduction (Intermediate)")
+    col1, col2 = st.columns(2)
+    with col1:
+        st.number_input("Renewable fuel reduction (J/Wh)", min_value=0.0, key='sedg_e22_renewable_reduction')
+        st.number_input("Non-renewable fuel reduction (J/Wh)", min_value=0.0, key='sedg_e22_nonrenewable_reduction')
+        st.number_input("Electricity reduction (J/Wh)", min_value=0.0, key='sedg_e22_electricity_reduction')
+    with col2:
+        st.number_input("Heating reduction (J/Wh)", min_value=0.0, key='sedg_e22_heating_reduction')
+        st.number_input("Cooling reduction (J/Wh)", min_value=0.0, key='sedg_e22_cooling_reduction')
+        st.number_input("Steam reduction (J/Wh)", min_value=0.0, key='sedg_e22_steam_reduction')
+    
+    st.divider()
+    
+    # E3.1 - Water
+    st.markdown("### SEDG-E3.1: Total Water Withdrawn (Basic)")
+    col1, col2 = st.columns(2)
+    with col1:
+        st.number_input("Purchased water (litres)", min_value=0.0, key='sedg_e31_purchased')
+        st.number_input("Surface water (litres)", min_value=0.0, key='sedg_e31_surface')
+        st.number_input("Groundwater (litres)", min_value=0.0, key='sedg_e31_ground')
+    with col2:
+        st.number_input("Seawater (litres)", min_value=0.0, key='sedg_e31_sea')
+        st.number_input("Produced water (litres)", min_value=0.0, key='sedg_e31_produced')
+    
+    st.divider()
+    
+    # E3.2 - Water Reduction
+    st.markdown("### SEDG-E3.2: Water Withdrawn Reduction (Intermediate)")
+    st.number_input("Water reduction (litres)", min_value=0.0, key='sedg_e32_reduction')
+    
+    st.divider()
+    
+    # E4.1 - Total Waste
+    st.markdown("### SEDG-E4.1: Total Waste (Basic)")
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.number_input("Generated (tonnes)", min_value=0.0, key='sedg_e41_generated')
+    with col2:
+        st.number_input("Diverted from disposal (tonnes)", min_value=0.0, key='sedg_e41_diverted')
+    with col3:
+        st.number_input("Directed to disposal (tonnes)", min_value=0.0, key='sedg_e41_disposed')
+    
+    st.divider()
+    
+    # E4.2 - Waste Breakdown
+    st.markdown("### SEDG-E4.2: Waste Breakdown (Intermediate)")
+    
+    st.markdown("**Hazardous Waste**")
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.number_input("Haz Generated (tonnes)", min_value=0.0, key='sedg_e42_haz_gen')
+    with col2:
+        st.number_input("Haz Diverted (tonnes)", min_value=0.0, key='sedg_e42_haz_div')
+    with col3:
+        st.number_input("Haz Disposed (tonnes)", min_value=0.0, key='sedg_e42_haz_disp')
+    
+    st.markdown("**Non-hazardous Waste**")
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.number_input("Non-haz Generated (tonnes)", min_value=0.0, key='sedg_e42_nonhaz_gen')
+    with col2:
+        st.number_input("Non-haz Diverted (tonnes)", min_value=0.0, key='sedg_e42_nonhaz_div')
+    with col3:
+        st.number_input("Non-haz Disposed (tonnes)", min_value=0.0, key='sedg_e42_nonhaz_disp')
+    
+    st.markdown("**Sector-specific Waste Streams**")
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.number_input("Sector Generated (tonnes)", min_value=0.0, key='sedg_e42_sector_gen')
+    with col2:
+        st.number_input("Sector Diverted (tonnes)", min_value=0.0, key='sedg_e42_sector_div')
+    with col3:
+        st.number_input("Sector Disposed (tonnes)", min_value=0.0, key='sedg_e42_sector_disp')
+    
+    st.markdown("**Material Composition**")
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.number_input("Material Generated (tonnes)", min_value=0.0, key='sedg_e42_material_gen')
+    with col2:
+        st.number_input("Material Diverted (tonnes)", min_value=0.0, key='sedg_e42_material_div')
+    with col3:
+        st.number_input("Material Disposed (tonnes)", min_value=0.0, key='sedg_e42_material_disp')
+    
+    st.divider()
+    
+    # E4.3 - Waste Diversion Methods
+    st.markdown("### SEDG-E4.3: Waste Diversion Methods (Advanced)")
+    
+    st.markdown("**Hazardous - Diverted from Disposal**")
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.number_input("Preparation for reuse (tonnes)", min_value=0.0, key='sedg_e43_haz_reuse')
+    with col2:
+        st.number_input("Recycling (tonnes)", min_value=0.0, key='sedg_e43_haz_recycle')
+    with col3:
+        st.number_input("Other recovery (tonnes)", min_value=0.0, key='sedg_e43_haz_recovery')
+    
+    st.markdown("**Non-hazardous - Diverted from Disposal**")
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.number_input("Prep for reuse (tonnes)", min_value=0.0, key='sedg_e43_nonhaz_reuse')
+    with col2:
+        st.number_input("Recycle (tonnes)", min_value=0.0, key='sedg_e43_nonhaz_recycle')
+    with col3:
+        st.number_input("Other recovery ops (tonnes)", min_value=0.0, key='sedg_e43_nonhaz_recovery')
+    
+    st.divider()
+    
+    # E4.4 - Waste Disposal Methods
+    st.markdown("### SEDG-E4.4: Waste Disposal Methods (Advanced)")
+    
+    st.markdown("**Hazardous - Directed to Disposal**")
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.number_input("Incin w/ recovery", min_value=0.0, key='sedg_e44_haz_incin_recovery')
+    with col2:
+        st.number_input("Incin w/o recovery", min_value=0.0, key='sedg_e44_haz_incin_no_recovery')
+    with col3:
+        st.number_input("Landfilling", min_value=0.0, key='sedg_e44_haz_landfill')
+    with col4:
+        st.number_input("Other disposal", min_value=0.0, key='sedg_e44_haz_other')
+    
+    st.markdown("**Non-hazardous - Directed to Disposal**")
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.number_input("Incin w/ recov", min_value=0.0, key='sedg_e44_nonhaz_incin_recovery')
+    with col2:
+        st.number_input("Incin w/o recov", min_value=0.0, key='sedg_e44_nonhaz_incin_no_recovery')
+    with col3:
+        st.number_input("Landfill", min_value=0.0, key='sedg_e44_nonhaz_landfill')
+    with col4:
+        st.number_input("Other disp", min_value=0.0, key='sedg_e44_nonhaz_other')
+    
+    st.divider()
+    
+    # E5.1 - Materials
+    st.markdown("### SEDG-E5.1: Key Materials (Basic)")
+    st.text_area("List of materials for primary products and services", key='sedg_e51_materials', height=80,
+                placeholder="e.g., Steel, Plastic, Paper...")
+    
+    st.divider()
+    
+    # E5.2 - Recycled Materials
+    st.markdown("### SEDG-E5.2: Recycled Input Materials (Advanced)")
+    st.number_input("Recycled input materials used (%)", min_value=0.0, max_value=100.0, key='sedg_e52_recycled_pct')
 
-# ============================================================================
-# TAB 2: SOCIAL DISCLOSURES
-# ============================================================================
+# SOCIAL
 with tab2:
     st.subheader("👥 Social Disclosures")
     
-    # SEDG-S1: Labour Standards
-    st.markdown("### SEDG-S1: Labour Standards")
-    
+    # S1.1 - Child & Forced Labour Incidents
+    st.markdown("### SEDG-S1.1: Child Labour and Forced Labour Incidents (Basic)")
     col1, col2 = st.columns(2)
     with col1:
-        st.session_state.sedg_data['social']['child_labour_incidents'] = st.number_input(
-            "Number of child labour incidents",
-            min_value=0,
-            value=st.session_state.sedg_data['social'].get('child_labour_incidents', 0),
-            key='soc_child_labour_incidents'
-        )
-        
-        st.session_state.sedg_data['social']['forced_labour_incidents'] = st.number_input(
-            "Number of forced labour incidents",
-            min_value=0,
-            value=st.session_state.sedg_data['social'].get('forced_labour_incidents', 0),
-            key='soc_forced_labour_incidents'
-        )
-    
+        st.number_input("Child labour incidents", min_value=0, key='sedg_s11_child_incidents')
+        st.text_area("Nature of child labour incidents", key='sedg_s11_child_nature', 
+                    placeholder="None or describe", height=80)
     with col2:
-        st.session_state.sedg_data['social']['child_labour_desc'] = st.text_area(
-            "Nature of child labour incidents (if any)",
-            value=st.session_state.sedg_data['social'].get('child_labour_desc', ''),
-            placeholder="Describe any incidents or enter 'None'",
-            key='soc_child_labour_desc'
-        )
-        
-        st.session_state.sedg_data['social']['forced_labour_desc'] = st.text_area(
-            "Nature of forced labour incidents (if any)",
-            value=st.session_state.sedg_data['social'].get('forced_labour_desc', ''),
-            placeholder="Describe any incidents or enter 'None'",
-            key='soc_forced_labour_desc'
-        )
+        st.number_input("Forced labour incidents", min_value=0, key='sedg_s11_forced_incidents')
+        st.text_area("Nature of forced labour incidents", key='sedg_s11_forced_nature', 
+                    placeholder="None or describe", height=80)
     
     st.divider()
     
-    # SEDG-S2: Employee Information
-    st.markdown("### SEDG-S2: Employee Information")
-    
+    # S1.2 - Risk of Child & Forced Labour
+    st.markdown("### SEDG-S1.2: Risk of Child Labour and Forced Labour (Intermediate)")
     col1, col2 = st.columns(2)
     with col1:
-        st.session_state.sedg_data['social']['num_employees'] = st.number_input(
-            "Number of employees",
-            min_value=0,
-            value=st.session_state.sedg_data['social'].get('num_employees', 0),
-            key='soc_num_employees'
-        )
-        
-        st.session_state.sedg_data['social']['turnover_rate'] = st.number_input(
-            "Turnover rate (%)",
-            min_value=0.0,
-            max_value=100.0,
-            value=st.session_state.sedg_data['social'].get('turnover_rate', 0.0),
-            key='soc_turnover_rate'
-        )
-        
-        st.session_state.sedg_data['social']['training_hours'] = st.number_input(
-            "Average hours of training per employee",
-            min_value=0.0,
-            value=st.session_state.sedg_data['social'].get('training_hours', 0.0),
-            key='soc_training_hours'
-        )
-    
+        st.text_area("Operations/suppliers with child labour risk", key='sedg_s12_child_risk_ops', 
+                    placeholder="List operations and suppliers...", height=100)
     with col2:
-        st.session_state.sedg_data['social']['employees_female'] = st.number_input(
-            "Percentage of employees - Female (%)",
-            min_value=0.0,
-            max_value=100.0,
-            value=st.session_state.sedg_data['social'].get('employees_female', 0.0),
-            key='soc_employees_female'
-        )
-        
-        st.session_state.sedg_data['social']['directors_female'] = st.number_input(
-            "Percentage of directors - Female (%)",
-            min_value=0.0,
-            max_value=100.0,
-            value=st.session_state.sedg_data['social'].get('directors_female', 0.0),
-            key='soc_directors_female'
-        )
+        st.text_area("Operations/suppliers with forced labour risk", key='sedg_s12_forced_risk_ops',
+                    placeholder="List operations and suppliers...", height=100)
     
     st.divider()
     
-    # SEDG-S3: Health & Safety
-    st.markdown("### SEDG-S3: Health & Safety")
+    # S2.1 - Training
+    st.markdown("### SEDG-S2.1: Employee Training (Basic)")
+    st.number_input("Average training hours per employee", min_value=0.0, key='sedg_s21_training_hours')
     
-    col1, col2, col3 = st.columns(3)
+    st.divider()
+    
+    # S2.2 - Employee Data
+    st.markdown("### SEDG-S2.2: Employee Information (Intermediate)")
+    col1, col2 = st.columns(2)
     with col1:
-        st.session_state.sedg_data['social']['fatalities'] = st.number_input(
-            "Number of fatalities",
-            min_value=0,
-            value=st.session_state.sedg_data['social'].get('fatalities', 0),
-            key='soc_fatalities'
-        )
-    
+        st.number_input("Number of employees", min_value=0, key='sedg_s22_num_employees')
     with col2:
-        st.session_state.sedg_data['social']['injuries'] = st.number_input(
-            "Number of injuries",
-            min_value=0,
-            value=st.session_state.sedg_data['social'].get('injuries', 0),
-            key='soc_injuries'
-        )
-    
-    with col3:
-        st.session_state.sedg_data['social']['hs_trained_pct'] = st.number_input(
-            "% of employees trained in H&S",
-            min_value=0.0,
-            max_value=100.0,
-            value=st.session_state.sedg_data['social'].get('hs_trained_pct', 0.0),
-            key='soc_hs_trained_pct'
-        )
+        st.number_input("Turnover rate (%)", min_value=0.0, max_value=100.0, key='sedg_s22_turnover')
     
     st.divider()
     
-    # SEDG-S4: Community
-    st.markdown("### SEDG-S4: Community Investment")
+    # S2.3 - Minimum Wage
+    st.markdown("### SEDG-S2.3: Employees Meeting Minimum Wage (Basic)")
+    st.number_input("% meeting minimum wage", min_value=0.0, max_value=100.0, key='sedg_s23_min_wage_pct')
     
-    st.session_state.sedg_data['social']['community_investment'] = st.number_input(
-        "Total amount of community investment and donations (MYR)",
-        min_value=0.0,
-        value=st.session_state.sedg_data['social'].get('community_investment', 0.0),
-        key='soc_community_investment'
-    )
+    st.divider()
+    
+    # S3.1 - Diversity - Employees
+    st.markdown("### SEDG-S3.1: Diversity - Company's Employees (Basic)")
+    col1, col2 = st.columns(2)
+    with col1:
+        st.number_input("Employees - Female (%)", min_value=0.0, max_value=100.0, key='sedg_s31_emp_female')
+    with col2:
+        st.text_input("Employees by age (%)", key='sedg_s31_emp_age', 
+                     placeholder="e.g., <30: 40%, 30-50: 50%, >50: 10%")
+    
+    st.divider()
+    
+    # S3.2 - Diversity - Directors
+    st.markdown("### SEDG-S3.2: Diversity - Company's Directors (Intermediate)")
+    col1, col2 = st.columns(2)
+    with col1:
+        st.number_input("Directors - Female (%)", min_value=0.0, max_value=100.0, key='sedg_s32_dir_female')
+    with col2:
+        st.text_input("Directors by age (%)", key='sedg_s32_dir_age',
+                     placeholder="e.g., <30: 0%, 30-50: 60%, >50: 40%")
+    
+    st.divider()
+    
+    # S4.1 - Health & Safety Incidents
+    st.markdown("### SEDG-S4.1: Occupational Health & Safety Incidents (Basic)")
+    col1, col2 = st.columns(2)
+    with col1:
+        st.number_input("Number of fatalities", min_value=0, key='sedg_s41_fatalities')
+    with col2:
+        st.number_input("Number of injuries", min_value=0, key='sedg_s41_injuries')
+    
+    st.divider()
+    
+    # S4.2 - H&S Training
+    st.markdown("### SEDG-S4.2: Health & Safety Training (Intermediate)")
+    col1, col2 = st.columns(2)
+    with col1:
+        st.number_input("Employees trained in H&S (number)", min_value=0, key='sedg_s42_hs_trained_num')
+    with col2:
+        st.number_input("Employees trained in H&S (%)", min_value=0.0, max_value=100.0, key='sedg_s42_hs_trained_pct')
+    
+    st.divider()
+    
+    # S5.1 - Community Investment
+    st.markdown("### SEDG-S5.1: Community Investment (Basic)")
+    st.number_input("Total community investment and donations (MYR)", min_value=0.0, key='sedg_s51_community_invest')
+    
+    st.divider()
+    
+    # S5.2 - Community Impact
+    st.markdown("### SEDG-S5.2: Community Impact (Advanced)")
+    st.text_area("Operations with negative impact on local communities", key='sedg_s52_negative_impact',
+                placeholder="List operations or enter 'None'", height=80)
 
-# ============================================================================
-# TAB 3: GOVERNANCE DISCLOSURES
-# ============================================================================
+# GOVERNANCE
 with tab3:
     st.subheader("⚖️ Governance Disclosures")
     
-    # SEDG-G1: Board Composition
-    st.markdown("### SEDG-G1: Board Composition")
-    
-    st.session_state.sedg_data['governance']['num_directors'] = st.number_input(
-        "Number of directors",
-        min_value=0,
-        value=st.session_state.sedg_data['governance'].get('num_directors', 0),
-        key='gov_num_directors'
-    )
-    
-    st.session_state.sedg_data['governance']['governance_structure'] = st.text_area(
-        "Governance structure",
-        value=st.session_state.sedg_data['governance'].get('governance_structure', ''),
-        placeholder="Describe your governance structure (e.g., Board of Directors, committees, reporting lines)",
-        key='gov_governance_structure',
-        height=100
-    )
+    # G1.1 - Board Composition
+    st.markdown("### SEDG-G1.1: Board Composition (Basic)")
+    st.number_input("Number of directors", min_value=0, key='sedg_g11_num_directors')
     
     st.divider()
     
-    # SEDG-G2: Policies
-    st.markdown("### SEDG-G2: Company Policies")
-    
-    st.session_state.sedg_data['governance']['company_policies'] = st.text_area(
-        "List of company policies",
-        value=st.session_state.sedg_data['governance'].get('company_policies', ''),
-        placeholder="List your company policies (one per line or comma-separated)",
-        key='gov_company_policies',
-        height=100
-    )
+    # G1.2 - Governance Structure
+    st.markdown("### SEDG-G1.2: Governance Structure (Intermediate)")
+    st.text_area("Company governance structure", key='sedg_g12_structure', height=120,
+                placeholder="Describe board structure, committees, reporting lines...")
     
     st.divider()
     
-    # SEDG-G3: Risk Management
-    st.markdown("### SEDG-G3: Risk Management")
+    # G2.1 - Policies
+    st.markdown("### SEDG-G2.1: Company Policies (Basic)")
+    st.text_area("List of company policies", key='sedg_g21_policies', height=120,
+                placeholder="List policies (one per line)...")
     
+    st.divider()
+    
+    # G3.1 - Audit
+    st.markdown("### SEDG-G3.1: Financial Audit (Basic)")
+    st.number_input("Year of last submitted audited financial report", min_value=2000, max_value=datetime.now().year,
+                   key='sedg_g31_audit_year')
+    
+    st.divider()
+    
+    # G3.2 - Operations Risks
+    st.markdown("### SEDG-G3.2: Operations & Activities Risks (Intermediate)")
+    st.text_area("List of company's operations and activities risks", key='sedg_g32_ops_risks', height=120,
+                placeholder="List risks (one per line)...")
+    
+    st.divider()
+    
+    # G3.3 - Sustainability Risks
+    st.markdown("### SEDG-G3.3: Sustainability Risks (Advanced)")
+    st.text_area("List of company's sustainability risks", key='sedg_g33_sustain_risks', height=120,
+                placeholder="List risks (one per line)...")
+    
+    st.divider()
+    
+    # G4.1 - Corruption Incidents
+    st.markdown("### SEDG-G4.1: Anti-Corruption Incidents (Basic)")
     col1, col2 = st.columns(2)
     with col1:
-        st.session_state.sedg_data['governance']['last_audit_year'] = st.number_input(
-            "Year of last submitted audited financial report",
-            min_value=2000,
-            max_value=datetime.now().year,
-            value=st.session_state.sedg_data['governance'].get('last_audit_year', datetime.now().year),
-            key='gov_last_audit_year'
-        )
-    
+        st.number_input("Confirmed corruption incidents", min_value=0, key='sedg_g41_corrupt_incidents')
     with col2:
-        pass  # Placeholder for layout
-    
-    st.session_state.sedg_data['governance']['operations_risks'] = st.text_area(
-        "List of company's operations and activities risks",
-        value=st.session_state.sedg_data['governance'].get('operations_risks', ''),
-        placeholder="List operational risks (one per line)",
-        key='gov_operations_risks',
-        height=100
-    )
-    
-    st.session_state.sedg_data['governance']['sustainability_risks'] = st.text_area(
-        "List of company's sustainability risks",
-        value=st.session_state.sedg_data['governance'].get('sustainability_risks', ''),
-        placeholder="List sustainability risks (one per line)",
-        key='gov_sustainability_risks',
-        height=100
-    )
+        st.text_area("Nature of corruption incidents", key='sedg_g41_corrupt_nature',
+                    placeholder="Describe or enter 'None'", height=80)
     
     st.divider()
     
-    # SEDG-G4: Anti-Corruption
-    st.markdown("### SEDG-G4: Anti-Corruption")
-    
+    # G4.2 - Anti-corruption Training
+    st.markdown("### SEDG-G4.2: Anti-Corruption Training (Intermediate)")
     col1, col2 = st.columns(2)
     with col1:
-        st.session_state.sedg_data['governance']['corruption_incidents'] = st.number_input(
-            "Number of confirmed incidents of corruption",
-            min_value=0,
-            value=st.session_state.sedg_data['governance'].get('corruption_incidents', 0),
-            key='gov_corruption_incidents'
-        )
-        
-        st.session_state.sedg_data['governance']['anticorruption_trained_pct'] = st.number_input(
-            "% of employees trained on anti-bribery and anti-corruption",
-            min_value=0.0,
-            max_value=100.0,
-            value=st.session_state.sedg_data['governance'].get('anticorruption_trained_pct', 0.0),
-            key='gov_anticorruption_trained_pct'
-        )
-    
+        st.number_input("Employees trained in anti-corruption (number)", min_value=0, key='sedg_g42_anticorrupt_num')
     with col2:
-        st.session_state.sedg_data['governance']['corruption_nature'] = st.text_area(
-            "Nature of confirmed incidents of corruption (if any)",
-            value=st.session_state.sedg_data['governance'].get('corruption_nature', ''),
-            placeholder="Describe incidents or enter 'None'",
-            key='gov_corruption_nature'
-        )
+        st.number_input("Employees trained in anti-corruption (%)", min_value=0.0, max_value=100.0, 
+                       key='sedg_g42_anticorrupt_pct')
     
     st.divider()
     
-    # SEDG-G5: Data Privacy
-    st.markdown("### SEDG-G5: Data Privacy")
+    # G4.3 - Corruption Risks
+    st.markdown("### SEDG-G4.3: Corruption Risks (Advanced)")
+    st.text_area("List of corruption risks", key='sedg_g43_corrupt_risks', height=100,
+                placeholder="List risks...")
     
+    st.divider()
+    
+    # G5.1 - Privacy
+    st.markdown("### SEDG-G5.1: Customer Data Privacy (Intermediate)")
     col1, col2 = st.columns(2)
     with col1:
-        st.session_state.sedg_data['governance']['privacy_complaints'] = st.number_input(
-            "Number of customer data privacy complaints",
-            min_value=0,
-            value=st.session_state.sedg_data['governance'].get('privacy_complaints', 0),
-            key='gov_privacy_complaints'
-        )
-    
+        st.number_input("Customer data privacy complaints", min_value=0, key='sedg_g51_privacy_complaints')
     with col2:
-        st.session_state.sedg_data['governance']['privacy_complaints_nature'] = st.text_area(
-            "Nature of customer data privacy complaints (if any)",
-            value=st.session_state.sedg_data['governance'].get('privacy_complaints_nature', ''),
-            placeholder="Describe complaints or enter 'None'",
-            key='gov_privacy_complaints_nature'
-        )
+        st.text_area("Nature of privacy complaints", key='sedg_g51_privacy_nature',
+                    placeholder="Describe or enter 'None'", height=80)
 
-# ============================================================================
-# DOWNLOAD SECTION
-# ============================================================================
+# DOWNLOAD
 st.divider()
 st.header("📥 Generate Report")
 
 col1, col2, col3 = st.columns([1, 2, 1])
 
 with col2:
-    st.info("📊 **Report Status:** Ready to generate")
-    
     if st.button("📥 Download SEDG Report (PDF)", type="primary", use_container_width=True):
         try:
-            # Generate PDF
-            with st.spinner("Generating PDF report..."):
-                pdf_buffer = generate_sedg_pdf(
-                    company_info=company,
-                    sedg_data=st.session_state.sedg_data,
-                    ghg_data=ghg_data,
-                    disclosure_date=disclosure_date
-                )
+            # Collect all data from session state
+            sedg_data = {k.replace('sedg_', ''): v for k, v in st.session_state.items() if k.startswith('sedg_')}
             
-            # Offer download
+            with st.spinner("Generating PDF..."):
+                pdf_buffer = generate_sedg_pdf(company, sedg_data, ghg_data, disclosure_date)
+            
             filename = f"SEDG_Report_{company['company_name'].replace(' ', '_')}_{reporting_period}.pdf"
             
-            st.download_button(
-                label="📥 Click to Download PDF",
-                data=pdf_buffer,
-                file_name=filename,
-                mime="application/pdf",
-                use_container_width=True
-            )
-            
-            st.success("✅ PDF generated successfully!")
+            st.download_button("📥 Download PDF", pdf_buffer, filename, "application/pdf", use_container_width=True)
+            st.success("✅ PDF generated!")
             
         except ImportError:
-            st.error("""
-            ❌ **ReportLab library not installed**
-            
-            Please install it using:
-            ```
-            pip install reportlab
-            ```
-            
-            Then restart your Streamlit app.
-            """)
+            st.error("❌ Install ReportLab: `pip install reportlab`")
         except Exception as e:
-            st.error(f"❌ Error generating PDF: {str(e)}")
+            st.error(f"❌ Error: {str(e)}")
             st.exception(e)
