@@ -11,6 +11,7 @@ from io import BytesIO
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from core.permissions import check_page_permission, show_permission_badge
+from core.cache import get_company_info
 
 # Check permissions
 check_page_permission('09_📝_iESG_Ready.py')
@@ -96,6 +97,14 @@ def init_iesg():
     for key, val in defaults.items():
         if key not in st.session_state:
             st.session_state[key] = val
+
+    # If the user is associated with a company, autofill company name and email
+    if st.session_state.get('company_id'):
+        company = get_company_info(st.session_state.company_id)
+        if company:
+            st.session_state['iesg_company_name'] = company.get('company_name', '')
+            # cache uses 'contact_email' key for company email
+            st.session_state['iesg_email'] = company.get('contact_email', company.get('email', ''))
 
 init_iesg()
 
@@ -195,12 +204,14 @@ with tab1:
         st.text_input(
             "Company Name *",
             key='iesg_company_name',
-            placeholder="Enter company name"
+            placeholder="Enter company name",
+            disabled=True
         )
         st.text_input(
             "Email Address *",
             key='iesg_email',
-            placeholder="company@example.com"
+            placeholder="company@example.com",
+            disabled=True
         )
     with col2:
         st.text_input(
