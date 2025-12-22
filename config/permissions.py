@@ -15,6 +15,7 @@ PAGE_PERMISSIONS = {
         '06_👥_User_Management.py',  # Admin only
         '07_🏢_Company_Management.py',  # Admin only
         '08_📋_SEDG_Report.py',  # ✅ Added SEDG Report
+        '09_📝_iESG_Ready.py',
     ],
     'manager': [
         '01_🏠_Dashboard.py',
@@ -22,11 +23,13 @@ PAGE_PERMISSIONS = {
         '03_📊_View_Data.py',
         '04_✅_Verify_Data.py',  # Manager can verify
         '08_📋_SEDG_Report.py',  # ✅ Manager can generate SEDG reports
+        '09_📝_iESG_Ready.py',
     ],
     'normal_user': [
         '01_🏠_Dashboard.py',
         '02_➕_Add_Emissions.py',
         '03_📊_View_Data.py',
+        '09_📝_iESG_Ready.py'
     ]
 }
 
