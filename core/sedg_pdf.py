@@ -83,7 +83,9 @@ def generate_sedg_pdf(company_info, sedg_data, ghg_data, disclosure_date):
     
     elements.append(gen_table)
     elements.append(Spacer(1, 0.3*inch))
-    
+    # Start Environmental Disclosures on a new page
+    elements.append(PageBreak())
+
     # ENVIRONMENTAL DISCLOSURES
     elements.append(Paragraph("ENVIRONMENTAL DISCLOSURES", styles['Heading2']))
     elements.append(Spacer(1, 0.1*inch))
