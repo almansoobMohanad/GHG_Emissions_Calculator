@@ -1,6 +1,7 @@
 """
 Document Requests - ESG Document Exchange Between Departments
 Allows departments to request and share SEDG Reports and i-ESG Questionnaires
+Now using BLOB storage - no filesystem dependencies
 """
 import streamlit as st
 import sys
@@ -17,6 +18,7 @@ from core.document_requests import (
     get_incoming_requests,
     get_outgoing_requests,
     approve_and_upload_document,
+    get_document_file,
     reject_request,
     cancel_request
 )
@@ -38,10 +40,6 @@ with st.sidebar:
 st.title("📤 Document Requests")
 st.markdown("**Request and share ESG documents between departments**")
 st.divider()
-
-# Create shared_documents folder if it doesn't exist
-UPLOAD_FOLDER = Path("shared_documents")
-UPLOAD_FOLDER.mkdir(exist_ok=True)
 
 # Create table if not exists
 create_request_table()
@@ -147,13 +145,21 @@ else:
                 )
                 
                 if uploaded_file:
+                    # Show file info
+                    file_size_kb = len(uploaded_file.getvalue()) / 1024
+                    st.caption(f"📄 {uploaded_file.name} ({file_size_kb:.1f} KB)")
+                    
                     if st.button("✅ Approve & Send", key=f"approve_{request_id}", type="primary"):
-                        success = approve_and_upload_document(request_id, uploaded_file, UPLOAD_FOLDER)
-                        if success:
-                            st.success("✅ Document uploaded and sent!")
-                            st.rerun()
+                        # Check file size (16 MB limit for MEDIUMBLOB)
+                        if file_size_kb > 15000:  # 15 MB safety margin
+                            st.error("❌ File too large! Maximum size is 15 MB.")
                         else:
-                            st.error("❌ Failed to upload document.")
+                            success = approve_and_upload_document(request_id, uploaded_file)
+                            if success:
+                                st.success("✅ Document uploaded and sent!")
+                                st.rerun()
+                            else:
+                                st.error("❌ Failed to upload document.")
                 
                 st.markdown("---")
                 
@@ -271,16 +277,17 @@ else:
                 with col2:
                     # Download button for completed requests
                     if status == 'completed' and pdf_filename:
-                        filepath = UPLOAD_FOLDER / pdf_filename
-                        if filepath.exists():
-                            with open(filepath, "rb") as f:
-                                st.download_button(
-                                    label="📥 Download",
-                                    data=f,
-                                    file_name=pdf_filename,
-                                    mime="application/pdf",
-                                    use_container_width=True
-                                )
+                        # Retrieve file from BLOB storage
+                        pdf_data, filename = get_document_file(request_id)
+                        
+                        if pdf_data:
+                            st.download_button(
+                                label="📥 Download",
+                                data=pdf_data,
+                                file_name=filename,
+                                mime="application/pdf",
+                                use_container_width=True
+                            )
                         else:
                             st.error("File not found")
                     
@@ -298,6 +305,6 @@ else:
 st.divider()
 st.markdown("""
 <div style='text-align: center; color: #666; font-size: 0.9em;'>
-    <p>📤 Document Requests | Secure ESG document exchange between departments</p>
+    <p>📤 Document Requests | Secure ESG document exchange • All files stored securely in database</p>
 </div>
 """, unsafe_allow_html=True)
