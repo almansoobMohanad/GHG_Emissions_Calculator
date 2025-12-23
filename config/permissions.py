@@ -10,26 +10,28 @@ PAGE_PERMISSIONS = {
         '01_🏠_Dashboard.py',
         '02_➕_Add_Emissions.py',
         '03_📊_View_Data.py',
-        '04_✅_Verify_Data.py',  # ✅ Added comma here!
+        '04_✅_Verify_Data.py',
         '05_⚙️_Admin_Panel.py',  # Admin only
         '06_👥_User_Management.py',  # Admin only
         '07_🏢_Company_Management.py',  # Admin only
-        '08_📋_SEDG_Report.py',  # ✅ Added SEDG Report
+        '08_📋_SEDG_Report.py',
         '09_📝_iESG_Ready.py',
+        '10_📤_Document_Requests.py',  # ✅ Added Document Requests
     ],
     'manager': [
         '01_🏠_Dashboard.py',
         '02_➕_Add_Emissions.py',
         '03_📊_View_Data.py',
-        '04_✅_Verify_Data.py',  # Manager can verify
-        '08_📋_SEDG_Report.py',  # ✅ Manager can generate SEDG reports
+        '04_✅_Verify_Data.py',
+        '08_📋_SEDG_Report.py',
         '09_📝_iESG_Ready.py',
+        '10_📤_Document_Requests.py',  # ✅ Manager can request/share documents
     ],
     'normal_user': [
         '01_🏠_Dashboard.py',
         '02_➕_Add_Emissions.py',
         '03_📊_View_Data.py',
-        '09_📝_iESG_Ready.py'
+        '09_📝_iESG_Ready.py',
     ]
 }
 
@@ -45,6 +47,8 @@ FEATURE_PERMISSIONS = {
     'can_manage_companies': ['admin'],
     'can_view_all_companies': ['admin'],
     'can_export_data': ['admin', 'manager'],
+    'can_request_documents': ['admin', 'manager', 'normal_user'],  # ✅ Added document request permission
+    'can_share_documents': ['admin', 'manager'],  # ✅ Added document sharing permission
 }
 
 # Role hierarchy (higher roles inherit lower role permissions)
