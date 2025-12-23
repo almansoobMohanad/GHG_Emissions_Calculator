@@ -294,7 +294,8 @@ else:
                                 data=pdf_data,
                                 file_name=filename,
                                 mime="application/pdf",
-                                use_container_width=True
+                                use_container_width=True,
+                                key=f"download_{request_id}"  # Add this line
                             )
                         else:
                             st.error("File not found")
