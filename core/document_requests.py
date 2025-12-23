@@ -1,9 +1,9 @@
 """
 Document Requests Database Functions
 Handles all database operations for document request/sharing functionality
+Now using BLOB storage for PDFs instead of filesystem
 """
 from datetime import datetime
-from pathlib import Path
 import streamlit as st
 from core.cache import get_database
 
@@ -23,6 +23,7 @@ def create_request_table():
         request_note TEXT,
         status VARCHAR(20) DEFAULT 'pending',
         pdf_filename VARCHAR(255),
+        pdf_data MEDIUMBLOB,
         rejection_reason TEXT,
         request_date DATETIME NOT NULL,
         completed_date DATETIME,
@@ -99,7 +100,7 @@ def get_outgoing_requests(company_id):
         company_id: Company ID
     
     Returns:
-        list: List of request tuples with all details
+        list: List of request tuples with all details (excluding BLOB data)
     """
     db = get_database()
     query = """
@@ -112,32 +113,37 @@ def get_outgoing_requests(company_id):
     
     return db.fetch_query(query, (company_id,))
 
-def approve_and_upload_document(request_id, pdf_file, upload_folder):
-    """Approve request and upload document
+def approve_and_upload_document(request_id, pdf_file):
+    """Approve request and upload document to BLOB storage
     
     Args:
         request_id: Request ID
         pdf_file: Uploaded file object from Streamlit
-        upload_folder: Path object for upload directory
     
     Returns:
         bool: True if successful, False otherwise
     """
     try:
-        # Save file
-        filename = f"request_{request_id}_{pdf_file.name}"
-        filepath = upload_folder / filename
-        with open(filepath, "wb") as f:
-            f.write(pdf_file.getbuffer())
+        # Read file data as bytes
+        pdf_bytes = pdf_file.getvalue()
+        filename = pdf_file.name
         
-        # Update database
+        # Update database with BLOB data
         db = get_database()
         query = """
         UPDATE document_requests
-        SET status = 'completed', pdf_filename = %s, completed_date = %s
+        SET status = 'completed', 
+            pdf_filename = %s, 
+            pdf_data = %s,
+            completed_date = %s
         WHERE request_id = %s
         """
-        params = (filename, datetime.now().strftime('%Y-%m-%d %H:%M:%S'), request_id)
+        params = (
+            filename, 
+            pdf_bytes, 
+            datetime.now().strftime('%Y-%m-%d %H:%M:%S'), 
+            request_id
+        )
         
         result = db.execute_query(query, params)
         
@@ -150,6 +156,28 @@ def approve_and_upload_document(request_id, pdf_file, upload_folder):
     except Exception as e:
         print(f"Error uploading document: {e}")
         return False
+
+def get_document_file(request_id):
+    """Retrieve document file data from BLOB storage
+    
+    Args:
+        request_id: Request ID
+    
+    Returns:
+        tuple: (pdf_bytes, filename) or (None, None) if not found
+    """
+    db = get_database()
+    query = """
+    SELECT pdf_data, pdf_filename
+    FROM document_requests
+    WHERE request_id = %s AND status = 'completed' AND pdf_data IS NOT NULL
+    """
+    
+    result = db.fetch_one(query, (request_id,))
+    
+    if result and result[0]:
+        return result[0], result[1]  # pdf_data, pdf_filename
+    return None, None
 
 def reject_request(request_id, rejection_reason):
     """Reject a document request
