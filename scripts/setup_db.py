@@ -210,6 +210,7 @@ class DatabaseSetup:
                     request_note TEXT,
                     status VARCHAR(20) DEFAULT 'pending',
                     pdf_filename VARCHAR(255),
+                    pdf_data MEDIUMBLOB,
                     rejection_reason TEXT,
                     request_date DATETIME NOT NULL,
                     completed_date DATETIME,
