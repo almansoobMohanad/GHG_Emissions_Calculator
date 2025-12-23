@@ -162,9 +162,16 @@ else:
                                 st.error("❌ Failed to upload document.")
                 
                 st.markdown("---")
-                
-                # Reject option
-                with st.expander("❌ Reject Request"):
+
+                # Use session state to track if reject form is shown
+                reject_key = f"show_reject_{request_id}"
+                if reject_key not in st.session_state:
+                    st.session_state[reject_key] = False
+
+                if st.button("❌ Reject Request", key=f"reject_btn_{request_id}", use_container_width=True):
+                    st.session_state[reject_key] = not st.session_state[reject_key]
+
+                if st.session_state[reject_key]:
                     rejection_reason = st.text_area(
                         "Reason for rejection",
                         placeholder="Please provide a reason...",
@@ -175,6 +182,7 @@ else:
                             success = reject_request(request_id, rejection_reason)
                             if success:
                                 st.success("Request rejected.")
+                                st.session_state[reject_key] = False  # Hide form
                                 st.rerun()
                             else:
                                 st.error("❌ Failed to reject request.")
