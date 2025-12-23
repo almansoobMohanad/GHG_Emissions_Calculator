@@ -164,7 +164,7 @@ else:
                 st.markdown("---")
                 
                 # Reject option
-                with st.popover("❌ Reject Request"):
+                with st.expander("❌ Reject Request"):
                     rejection_reason = st.text_area(
                         "Reason for rejection",
                         placeholder="Please provide a reason...",
