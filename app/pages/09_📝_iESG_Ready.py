@@ -40,58 +40,58 @@ def init_iesg():
         f'{prefix}company_name': '',
         f'{prefix}email': '',
         f'{prefix}phone': '',
-        f'{prefix}location': 'W.P Kuala Lumpur',
-        f'{prefix}subsector': 'E&E',
+        f'{prefix}location': 'W.P Kuala Lumpur',  # Keep this as is
+        f'{prefix}subsector': 'E&E',  # Keep this as is
         f'{prefix}subsector_other': '',
-        f'{prefix}company_size': 'Small (sales: RM300,000 ≤ RM15 mil; employees: 5 to < 30)',
-        f'{prefix}company_type': 'Export-oriented (More than 60% of the products are exported)',
+        f'{prefix}company_size': None,  # Changed from first option
+        f'{prefix}company_type': None,  # Changed from first option
         f'{prefix}reporting_standard': [],
         f'{prefix}reporting_standard_other': '',
         f'{prefix}none_reason': [],
         f'{prefix}none_reason_other': '',
         
         # Section B: General Understanding of ESG
-        f'{prefix}q8_maturity': 'We have not started our sustainability journey yet',
+        f'{prefix}q8_maturity': None,  # Changed
         f'{prefix}q9_stakeholders': [],
-        f'{prefix}q10_business_case': 'The Organization does not understand how ESG can present opportunities to enhance revenue, reduce costs, improve risk management, etc',
-        f'{prefix}q11_esg_goals': 'The Organization has no targets and goals in relation to ESG commitments',
-        f'{prefix}q12_esg_leadership': 'There is no clear ESG leader within the Organization',
-        f'{prefix}q13_esg_reporting': "The Organization doesn't disclose information on its ESG impact and agenda and doesn't have an ESG rating",
-        f'{prefix}q14_data_understanding': 'The Organization has not assessed what data is required for any sustainability reporting',
-        f'{prefix}q15_esg_elements': 'There is no ESG program within the Organization',
-        f'{prefix}q16_validation': 'There is no independent external validation of the ESG information and data reported publicly by the Organization, or no information is reported',
+        f'{prefix}q10_business_case': None,  # Changed
+        f'{prefix}q11_esg_goals': None,  # Changed
+        f'{prefix}q12_esg_leadership': None,  # Changed
+        f'{prefix}q13_esg_reporting': None,  # Changed
+        f'{prefix}q14_data_understanding': None,  # Changed
+        f'{prefix}q15_esg_elements': None,  # Changed
+        f'{prefix}q16_validation': None,  # Changed
         
         # Section C: Environment
-        f'{prefix}q17_carbon': 'The Organization has no Carbon Footprint Reduction program due to lack of knowledge on the methodology',
-        f'{prefix}q18_ghg': 'The Organization has no GHG Emissions monitoring in place, with no specific targets, and no goals publicly communicated',
-        f'{prefix}q19_water': 'The Organization has no water efficiency management',
-        f'{prefix}q20_waste': 'The Organization has no sustainable material sourcing management',
-        f'{prefix}q21_wastewater': 'The Organization has no effort to improve the quality of its wastewater and discharged water management',
-        f'{prefix}q22_energy': 'The Organization has no efficient practise on energy consumed – electricity, gas or steam water',
-        f'{prefix}q23_biodiversity': 'The Organization has no effort to preserve and conserve the survival of biodiversity',
-        f'{prefix}q24_eco_materials': 'The Organization does not use eco-friendly raw material in business operation',
-        f'{prefix}q25_reforestation': 'The Organization does not conduct any reforestation program',
+        f'{prefix}q17_carbon': None,  # Changed
+        f'{prefix}q18_ghg': None,  # Changed
+        f'{prefix}q19_water': None,  # Changed
+        f'{prefix}q20_waste': None,  # Changed
+        f'{prefix}q21_wastewater': None,  # Changed
+        f'{prefix}q22_energy': None,  # Changed
+        f'{prefix}q23_biodiversity': None,  # Changed
+        f'{prefix}q24_eco_materials': None,  # Changed
+        f'{prefix}q25_reforestation': None,  # Changed
         
         # Section D: Social
-        f'{prefix}q26_employee_involvement': 'The Organization does not address ESG matters with its employees and does not solicit feedback or input from its employees',
-        f'{prefix}q27_domestic_labour': 'The Organisation is unaware with the labour laws and regulations in the country',
-        f'{prefix}q28_intl_labour': 'The Organization lack of understanding on the international labour laws and regulations',
-        f'{prefix}q29_equal_employment': 'Organization does not set target to achieve equal employment and promotion opportunities',
-        f'{prefix}q30_min_wage': 'Organization pays wages lower than the national minimum wage requirement',
-        f'{prefix}q31_health_safety': 'Organization does not meet with the basic safety requirement',
-        f'{prefix}q32_grievance': 'Organization does not practice a formal grievance handling procedures',
-        f'{prefix}q33_upskilling': 'Organization does not conduct regular training to upskill workers',
-        f'{prefix}q34_community': 'Organization does not provide sponsorships or donations to the community',
+        f'{prefix}q26_employee_involvement': None,  # Changed
+        f'{prefix}q27_domestic_labour': None,  # Changed
+        f'{prefix}q28_intl_labour': None,  # Changed
+        f'{prefix}q29_equal_employment': None,  # Changed
+        f'{prefix}q30_min_wage': None,  # Changed
+        f'{prefix}q31_health_safety': None,  # Changed
+        f'{prefix}q32_grievance': None,  # Changed
+        f'{prefix}q33_upskilling': None,  # Changed
+        f'{prefix}q34_community': None,  # Changed
         
         # Section E: Governance
-        f'{prefix}q35_board_leadership': 'The Board is not involved in ESG matters',
-        f'{prefix}q36_board_awareness': 'The Board or management team have a low understanding of the risk management and regulatory environment affecting their business with regard to ESG topics and are not taking a coordinated approach to ensuring regulatory compliance',
-        f'{prefix}q37_strategy': 'Organization does not have a documented vision, mission, values and principles',
-        f'{prefix}q38_code_conduct': 'Organization does not publish code of conduct',
-        f'{prefix}q39_anti_corruption': 'Organization does not have any anti-corruption management system',
-        f'{prefix}q40_whistleblower': 'Organization does not have any whistleblower program',
-        f'{prefix}q41_accounting': 'Organization does not have an accurate and transparent accounting method',
-        f'{prefix}q42_data_privacy': 'Organization does not have a clear data protection, privacy and data protection scheme',
+        f'{prefix}q35_board_leadership': None,  # Changed
+        f'{prefix}q36_board_awareness': None,  # Changed
+        f'{prefix}q37_strategy': None,  # Changed
+        f'{prefix}q38_code_conduct': None,  # Changed
+        f'{prefix}q39_anti_corruption': None,  # Changed
+        f'{prefix}q40_whistleblower': None,  # Changed
+        f'{prefix}q41_accounting': None,  # Changed
+        f'{prefix}q42_data_privacy': None,  # Changed
     }
     
     for key, val in defaults.items():
@@ -173,7 +173,8 @@ def calculate_progress():
     
     for field in required_fields:
         value = st.session_state.get(field, '')
-        if value and value != [] and value != '':
+        # Update this condition to handle None
+        if value is not None and value != [] and value != '':
             completed_fields += 1
     
     return int((completed_fields / total_fields * 100)) if total_fields > 0 else 0
@@ -265,7 +266,7 @@ with tab1:
         "Medium (sales: RM15 mil < RM50 mil; employees: 30 to ≤ 75)",
         "Large (sales: >RM50 mil; employees: >75)"
     ]
-    st.radio("Company size", options=sizes, key='iesg_company_size')
+    st.radio("Company size", options=sizes, key='iesg_company_size', index=None)
     
     st.divider()
     
@@ -275,7 +276,7 @@ with tab1:
         "Export-oriented (More than 60% of the products are exported)",
         "Domestic-oriented (Less than 60% of the products are exported)"
     ]
-    st.radio("Company type", options=types, key='iesg_company_type')
+    st.radio("Company type", options=types, key='iesg_company_type', index=None)
     
     st.divider()
     
@@ -331,7 +332,7 @@ with tab2:
         "We are progressing well, but there is room for improvement",
         "We are very advanced"
     ]
-    st.radio("Select maturity level", options=maturity_options, key='iesg_q8_maturity')
+    st.radio("Select maturity level", options=maturity_options, key='iesg_q8_maturity', index=None)
     
     st.divider()
     
@@ -359,7 +360,7 @@ with tab2:
         "The Organization adopts ESG practices at overall level but does not quantify it to revenue generation and cost reduction, etc",
         "The Organization has a clear understanding of ESG practices, with ESG activities clearly contributing to revenue growth, helping to reduce costs and manage risk, beneficial to employee engagement, etc"
     ]
-    st.radio("Select one", options=business_case, key='iesg_q10_business_case')
+    st.radio("Select one", options=business_case, key='iesg_q10_business_case', index=None)
     
     st.divider()
     
@@ -371,7 +372,7 @@ with tab2:
         "The Organization has a well-defined set of goals and targets relating to ESG",
         "The Organization has a set of comprehensive targets and goals that it wishes to achieve with deadlines, and communicates such targets and goals publicly and within the Organization, including KPIs"
     ]
-    st.radio("Select one", options=goals, key='iesg_q11_esg_goals')
+    st.radio("Select one", options=goals, key='iesg_q11_esg_goals', index=None)
     
     st.divider()
     
@@ -383,7 +384,7 @@ with tab2:
         "There is a leader within the Organization to ESG matters who has limited authority",
         "Organization has a clear ESG leader (Chief Sustainability Officer) with clear KPIs and targets, who has the role and authority to drive the ESG program, reports to the Board and makes decisions"
     ]
-    st.radio("Select one", options=leadership, key='iesg_q12_esg_leadership')
+    st.radio("Select one", options=leadership, key='iesg_q12_esg_leadership', index=None)
     
     st.divider()
     
@@ -395,7 +396,7 @@ with tab2:
         "The Organization includes significant information on ESG matters in its non-financial reporting but has limited interaction with rating agencies",
         "The Organization has solicited an ESG rating from a recognised rating agency such as GRI and TCFD and the management communicates regularly with the rating agency"
     ]
-    st.radio("Select one", options=reporting, key='iesg_q13_esg_reporting')
+    st.radio("Select one", options=reporting, key='iesg_q13_esg_reporting', index=None)
     
     st.divider()
     
@@ -407,7 +408,7 @@ with tab2:
         "The Organization has a good understanding of the data required for sustainability reporting and report them externally",
         "The Organization has assessed what data is required for external reporting of ESG matters and has put in place processes to be able to publish external reports in high quality and detail (GRI, TCFD, etc)"
     ]
-    st.radio("Select one", options=data_understanding, key='iesg_q14_data_understanding')
+    st.radio("Select one", options=data_understanding, key='iesg_q14_data_understanding', index=None)
     
     st.divider()
     
@@ -447,7 +448,7 @@ with tab3:
         "The Organization has decided and published ambitious carbon footprint reduction goals. A comprehensive programme has been established to attain the goals",
         "The Organization has publicly communicated a Net Zero target and commitments, and has a comprehensive plan and resources in place to achieve them, including reporting the progress on a regular basis"
     ]
-    st.radio("Select one", options=carbon, key='iesg_q17_carbon')
+    st.radio("Select one", options=carbon, key='iesg_q17_carbon', index=None)
     
     st.divider()
     
@@ -459,7 +460,7 @@ with tab3:
         "The Organization has decided and published ambitious GHG emissions reduction goals. A comprehensive programme has been established to attain the goals",
         "The Organization has publicly communicated a GHG emissions monitoring, and has a comprehensive plan and resources in place to achieve them, including reporting the progress on a regular basis"
     ]
-    st.radio("Select one", options=ghg, key='iesg_q18_ghg')
+    st.radio("Select one", options=ghg, key='iesg_q18_ghg', index=None)
     
     st.divider()
     
@@ -471,7 +472,7 @@ with tab3:
         "The Organization monitor and report water use and quality by tracking these metrics, businesses can identify areas for improvement and demonstrate their commitment to water stewardship",
         "The Organization has Implemented water-efficient technologies and practices: This includes measures such as water-efficient irrigation and using recycled water"
     ]
-    st.radio("Select one", options=water, key='iesg_q19_water')
+    st.radio("Select one", options=water, key='iesg_q19_water', index=None)
     
     st.divider()
     
@@ -483,7 +484,7 @@ with tab3:
         "The Organization has practised a comprehensive waste-related impact management",
         "The Organization has an extensive action on waste-related impacts management"
     ]
-    st.radio("Select one", options=waste, key='iesg_q20_waste')
+    st.radio("Select one", options=waste, key='iesg_q20_waste', index=None)
     
     st.divider()
     
@@ -495,7 +496,7 @@ with tab3:
         "The Organization has an extensive effort to improve the quality of its wastewater and discharged water such minimising wastewater",
         "The Organization has communicated about waste-water by engaging with stakeholders, including local communities, water authorities, and NGOs, to understand local water-related risks and opportunities and to develop solutions collaboratively"
     ]
-    st.radio("Select one", options=wastewater, key='iesg_q21_wastewater')
+    st.radio("Select one", options=wastewater, key='iesg_q21_wastewater', index=None)
     
     st.divider()
     
@@ -507,7 +508,7 @@ with tab3:
         "The Organization record and control the energy consumption, and gradually reduce and optimise energy consumption",
         "The Organization maximize energy efficiency by taking a holistic approach: consider low-cost and high-impact changes such as installing solar panels"
     ]
-    st.radio("Select one", options=energy, key='iesg_q22_energy')
+    st.radio("Select one", options=energy, key='iesg_q22_energy', index=None)
     
     st.divider()
     
@@ -519,7 +520,7 @@ with tab3:
         "The Organization always consider their operation with the respect to its impact on biodiversity",
         "The Organization has implemented prevention and remediation activities with respect to its impact on biodiversity by collaborating with NGOs"
     ]
-    st.radio("Select one", options=biodiversity, key='iesg_q23_biodiversity')
+    st.radio("Select one", options=biodiversity, key='iesg_q23_biodiversity', index=None)
     
     st.divider()
     
@@ -531,7 +532,7 @@ with tab3:
         "The Organization uses eco-friendly raw materials in business operation (e.g. recycled rubber, biodegradable plastics, compostable straws and others)",
         "The Organization only uses eco-friendly raw materials in business operation (e.g. recycled rubber, biodegradable plastics, compostable straws and others)"
     ]
-    st.radio("Select one", options=eco_materials, key='iesg_q24_eco_materials')
+    st.radio("Select one", options=eco_materials, key='iesg_q24_eco_materials', index=None)
     
     st.divider()
     
@@ -543,7 +544,7 @@ with tab3:
         "Organization has initiated a in-house reforestation program to contribute to environmental sustainability",
         "Organization has conducted thorough assessments of deforested areas and collaborate with environmental experts and local communities to implement sustainable reforestation strategies"
     ]
-    st.radio("Select one", options=reforestation, key='iesg_q25_reforestation')
+    st.radio("Select one", options=reforestation, key='iesg_q25_reforestation', index=None)
 
 # ============================================================================
 # SECTION D: SOCIAL
@@ -559,7 +560,7 @@ with tab4:
         "The Board sponsors initiatives in the ESG space and communication on such initiatives internally with employees",
         "The Organization extensively communicates with its employees on the importance of ESG, the Organization's ESG programme and how employees can be involved in and support the ESG aspirations of the Organization"
     ]
-    st.radio("Select one", options=employee_involvement, key='iesg_q26_employee_involvement')
+    st.radio("Select one", options=employee_involvement, key='iesg_q26_employee_involvement', index=None)
     
     st.divider()
     
@@ -571,7 +572,7 @@ with tab4:
         "The Organization is committed in maintaining a comprehensive understanding of labour laws and regulations. The organization actively train employees on their rights and responsibilities, conduct internal audits, and promptly address any compliance gaps that may arise",
         "The Organization goes beyond mere compliance and takes a proactive approach to stay ahead of changes in labour laws and regulations. Dedicated teams were formed to engage with Labour Department and Ministry of Human Resource, and a robust systems in place for interpreting complex labour laws, managing external audits, and continuously improving processes to ensure ongoing compliance"
     ]
-    st.radio("Select one", options=domestic_labour, key='iesg_q27_domestic_labour')
+    st.radio("Select one", options=domestic_labour, key='iesg_q27_domestic_labour', index=None)
     
     st.divider()
     
@@ -583,7 +584,7 @@ with tab4:
         "The Organization is up to date with a wide range of international labour laws and regulations, actively monitor and comply with standards set by organizations such as the International Labour Organization (ILO)",
         "The Organization proactively engage in continuous improvement initiatives, regularly conduct internal audits, and participate in external certifications to demonstrate high standards commitment of labor practices"
     ]
-    st.radio("Select one", options=intl_labour, key='iesg_q28_intl_labour')
+    st.radio("Select one", options=intl_labour, key='iesg_q28_intl_labour', index=None)
     
     st.divider()
     
@@ -595,7 +596,7 @@ with tab4:
         "Organization actively promotes diversity and inclusion in the workforce by implementing policies and practices that prevent discrimination based on factors such as race, gender, age, religion, and disability. Training and awareness programs provided to foster an inclusive environment and ensure fair treatment throughout the employment lifecycle",
         "Organization has implemented comprehensive strategies to proactively identify and address any systemic barriers that may hinder equal opportunities through mentorship and sponsorship programs, internal mobility initiatives, and talent development programs to ensure that individuals from all backgrounds have equal access to career advancement and promotional opportunities"
     ]
-    st.radio("Select one", options=equal_employment, key='iesg_q29_equal_employment')
+    st.radio("Select one", options=equal_employment, key='iesg_q29_equal_employment', index=None)
     
     st.divider()
     
@@ -607,7 +608,7 @@ with tab4:
         "Organization not only meets the minimum wage requirements but also considers factors such as cost of living and industry standards when determining employee compensation. Periodic reviews is conducted to ensure that wage rates remain competitive and equitable within the industry",
         "Organization proactively assess and adjust the compensation structure to provide a living wage that enables employees to meet their basic needs and maintain a decent standard of living, and adopt progressive wage policies to support the financial well-being to the workforce"
     ]
-    st.radio("Select one", options=min_wage, key='iesg_q30_min_wage')
+    st.radio("Select one", options=min_wage, key='iesg_q30_min_wage', index=None)
     
     st.divider()
     
@@ -619,7 +620,7 @@ with tab4:
         "Organization actively maintains compliance with OSHA regulations by regularly conducting comprehensive workplace risk assessments and implementing appropriate control measures. Safety committees is established to provide ongoing safety training programs, and maintain records of incidents and near-misses to continuously improve safety practices",
         "Organization adopting proactive safety measures and promoting a culture of safety throughout the workforce. Conduct regular safety audit, engage employees in safety programs and initiatives, and invest in advanced technologies and equipment to enhance workplace safety according to OSHA"
     ]
-    st.radio("Select one", options=health_safety, key='iesg_q31_health_safety')
+    st.radio("Select one", options=health_safety, key='iesg_q31_health_safety', index=None)
     
     st.divider()
     
@@ -631,7 +632,7 @@ with tab4:
         "Organization has developed a comprehensive formal grievance handling procedure that includes clear guidelines and steps for reporting, investigating, and resolving grievances. Designated personnel being trained to handle grievances effectively",
         "Organization has established multiple channels for employees to report grievances, including anonymous options, and actively promote a culture of transparency and trust. Regular audits of the grievance handling process conducted to identify areas for improvement and ensure that resolutions are fair and sustainable"
     ]
-    st.radio("Select one", options=grievance, key='iesg_q32_grievance')
+    st.radio("Select one", options=grievance, key='iesg_q32_grievance', index=None)
     
     st.divider()
     
@@ -643,7 +644,7 @@ with tab4:
         "Organization is committed to the continuous upskilling of workers and conducts regular training programs to improve their technical skills and knowledge",
         "Organization takes a proactive approach to upskilling workers and invests significantly in their professional development. Robust training and development framework is introduced that includes comprehensive skill enhancement programs, leadership development initiatives, and access to advanced learning resources"
     ]
-    st.radio("Select one", options=upskilling, key='iesg_q33_upskilling')
+    st.radio("Select one", options=upskilling, key='iesg_q33_upskilling', index=None)
     
     st.divider()
     
@@ -655,7 +656,7 @@ with tab4:
         "Organization actively engages in community outreach and support by providing regular sponsorships or donations to various community organizations, nonprofits, and social causes",
         "Organization is deeply committed to corporate social responsibility and actively invest in the betterment of the community. Establish dedicated programs and initiatives to support community development, education, healthcare, and environmental sustainability"
     ]
-    st.radio("Select one", options=community, key='iesg_q34_community')
+    st.radio("Select one", options=community, key='iesg_q34_community', index=None)
 
 # ============================================================================
 # SECTION E: GOVERNANCE
@@ -671,7 +672,7 @@ with tab5:
         "Organization has a dedicated board sub-committee for ESG matters",
         "The Board takes clear active leadership on the ESG agenda and regularly discusses risk and opportunities. The ESG agenda and company plans are communicated internally throughout the Organization"
     ]
-    st.radio("Select one", options=board_leadership, key='iesg_q35_board_leadership')
+    st.radio("Select one", options=board_leadership, key='iesg_q35_board_leadership', index=None)
     
     st.divider()
     
@@ -683,7 +684,7 @@ with tab5:
         "The Board and management are actively dealing with ESG risks and regulatory requirement with a good understanding of the implications of the regulations",
         "The Board and management have strong expertise in the ESG risks management and regulations areas relating to ESG as they impact the business, and have clear and comprehensive programmes in place"
     ]
-    st.radio("Select one", options=board_awareness, key='iesg_q36_board_awareness')
+    st.radio("Select one", options=board_awareness, key='iesg_q36_board_awareness', index=None)
     
     st.divider()
     
@@ -695,7 +696,7 @@ with tab5:
         "Organization has developed a comprehensive strategy that aligns with long-term mission, vision and principle",
         "Organization has an advanced and dynamic strategy that enables to stay ahead of the competition and drive sustainable growth"
     ]
-    st.radio("Select one", options=strategy, key='iesg_q37_strategy')
+    st.radio("Select one", options=strategy, key='iesg_q37_strategy', index=None)
     
     st.divider()
     
@@ -707,7 +708,7 @@ with tab5:
         "Organization has implemented a comprehensive communication plan for the Code of Conduct",
         "Organization excels in the communication of the Code of Conduct through robust communication strategy that includes multiple channels and methods to reach all employees effectively"
     ]
-    st.radio("Select one", options=code_conduct, key='iesg_q38_code_conduct')
+    st.radio("Select one", options=code_conduct, key='iesg_q38_code_conduct', index=None)
     
     st.divider()
     
@@ -719,7 +720,7 @@ with tab5:
         "Organization has implemented a comprehensive anti-corruption management system. Established clear procedures and controls to prevent corruption in all aspects of operations",
         "Organization has a incorporated anti-corruption management system comprehensively and obtained internationally recognized certifications such as ISO 37001: Anti-Bribery Management Systems. The anti-bribery policies and procedures are integrated into our overall governance framework"
     ]
-    st.radio("Select one", options=anti_corruption, key='iesg_q39_anti_corruption')
+    st.radio("Select one", options=anti_corruption, key='iesg_q39_anti_corruption', index=None)
     
     st.divider()
     
@@ -731,7 +732,7 @@ with tab5:
         "Organization has developed a comprehensive whistle blower procedure that includes clear guidelines and steps for reporting, investigating, and resolving. Designated team is formed to handle complaints effectively",
         "Organization has established multiple channels to report any types of corruption and actively promote a culture of transparency and trust. Regular audits of the complaint handling process conducted to identify areas for improvement and ensure that resolutions are fair"
     ]
-    st.radio("Select one", options=whistleblower, key='iesg_q40_whistleblower')
+    st.radio("Select one", options=whistleblower, key='iesg_q40_whistleblower', index=None)
     
     st.divider()
     
@@ -743,7 +744,7 @@ with tab5:
         "Organization uses a standard accounting method",
         "Organization uses accurate and transparent accounting method that verified by external experties"
     ]
-    st.radio("Select one", options=accounting, key='iesg_q41_accounting')
+    st.radio("Select one", options=accounting, key='iesg_q41_accounting', index=None)
     
     st.divider()
     
@@ -755,7 +756,7 @@ with tab5:
         "Organization has a basic data protection, privacy and data protection scheme according to Personal Data Protection Act 2010",
         "Organization has a comprehensive data protection, privacy and data protection scheme according to Personal Data Protection Act 2010, Computer Crime Act 1997 and Consumer Protection Act 1999"
     ]
-    st.radio("Select one", options=data_privacy, key='iesg_q42_data_privacy')
+    st.radio("Select one", options=data_privacy, key='iesg_q42_data_privacy', index=None)
 
 # ============================================================================
 # SCORING SYSTEM
@@ -976,8 +977,9 @@ def calculate_score():
     
     # Calculate score for each question (Q8, Q10-Q42)
     for key, options in score_map.items():
-        answer = st.session_state.get(key, '')
-        if answer in options:
+        answer = st.session_state.get(key, None)  # Changed to None
+        # Only score if answer is not None
+        if answer and answer in options:
             score += options.index(answer)
     
     # Q9: Stakeholder engagements (1 point per checkbox, max 6)
