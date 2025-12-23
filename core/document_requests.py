@@ -2,17 +2,14 @@
 Document Requests Database Functions
 Handles all database operations for document request/sharing functionality
 Now using BLOB storage for PDFs instead of filesystem
+WITH OPTIMIZED CACHING
 """
 from datetime import datetime
 import streamlit as st
 from core.cache import get_database
 
 def create_request_table():
-    """Create document_requests table if it doesn't exist
-    
-    This function creates the table at runtime if needed.
-    For proper setup, add this table definition to your setup_db.py file.
-    """
+    """Create document_requests table if it doesn't exist"""
     db = get_database()
     query = """
     CREATE TABLE IF NOT EXISTS document_requests (
@@ -37,17 +34,7 @@ def create_request_table():
     db.execute_query(query)
 
 def create_document_request(from_company_id, to_company_id, document_type, request_note):
-    """Create a new document request
-    
-    Args:
-        from_company_id: Requesting company ID
-        to_company_id: Target company ID
-        document_type: Type of document (SEDG Report or i-ESG Questionnaire)
-        request_note: Optional note explaining the request
-    
-    Returns:
-        bool: True if successful, False otherwise
-    """
+    """Create a new document request"""
     db = get_database()
     query = """
     INSERT INTO document_requests 
@@ -65,13 +52,14 @@ def create_document_request(from_company_id, to_company_id, document_type, reque
     result = db.execute_query(query, params)
     
     if result:
-        # Clear caches
+        # Clear caches for both companies
         get_incoming_requests.clear()
         get_outgoing_requests.clear()
+        get_all_requests_for_company.clear()
     
     return result
 
-@st.cache_data(ttl=60)  # Cache for 1 minute
+@st.cache_data(ttl=300)  # Cache for 5 minutes (increased from 1 min)
 def get_incoming_requests(company_id):
     """Get requests TO this company (pending only)
     
@@ -92,7 +80,7 @@ def get_incoming_requests(company_id):
     
     return db.fetch_query(query, (company_id,))
 
-@st.cache_data(ttl=60)  # Cache for 1 minute
+@st.cache_data(ttl=300)  # Cache for 5 minutes (increased from 1 min)
 def get_outgoing_requests(company_id):
     """Get requests FROM this company (all statuses)
     
@@ -113,16 +101,49 @@ def get_outgoing_requests(company_id):
     
     return db.fetch_query(query, (company_id,))
 
-def approve_and_upload_document(request_id, pdf_file):
-    """Approve request and upload document to BLOB storage
+@st.cache_data(ttl=300)  # NEW: Cache combined requests
+def get_all_requests_for_company(company_id):
+    """Get ALL requests (incoming and outgoing) for a company
     
-    Args:
-        request_id: Request ID
-        pdf_file: Uploaded file object from Streamlit
+    This is more efficient than calling get_incoming_requests and 
+    get_outgoing_requests separately
     
     Returns:
-        bool: True if successful, False otherwise
+        dict: {
+            'incoming': [...],
+            'outgoing': [...]
+        }
     """
+    db = get_database()
+    
+    # Get incoming
+    incoming_query = """
+    SELECT request_id, from_company_id, document_type, request_note, 
+           request_date, status, rejection_reason
+    FROM document_requests
+    WHERE to_company_id = %s AND status = 'pending'
+    ORDER BY request_date DESC
+    """
+    
+    # Get outgoing
+    outgoing_query = """
+    SELECT request_id, to_company_id, document_type, request_note, 
+           request_date, status, pdf_filename, rejection_reason, completed_date
+    FROM document_requests
+    WHERE from_company_id = %s
+    ORDER BY request_date DESC
+    """
+    
+    incoming = db.fetch_query(incoming_query, (company_id,))
+    outgoing = db.fetch_query(outgoing_query, (company_id,))
+    
+    return {
+        'incoming': incoming or [],
+        'outgoing': outgoing or []
+    }
+
+def approve_and_upload_document(request_id, pdf_file):
+    """Approve request and upload document to BLOB storage"""
     try:
         # Read file data as bytes
         pdf_bytes = pdf_file.getvalue()
@@ -148,15 +169,18 @@ def approve_and_upload_document(request_id, pdf_file):
         result = db.execute_query(query, params)
         
         if result:
-            # Clear caches
+            # Clear ALL caches
             get_incoming_requests.clear()
             get_outgoing_requests.clear()
+            get_all_requests_for_company.clear()
+            get_document_file.clear()
         
         return result
     except Exception as e:
         print(f"Error uploading document: {e}")
         return False
 
+@st.cache_data(ttl=3600)  # NEW: Cache for 1 hour - documents rarely change once uploaded
 def get_document_file(request_id):
     """Retrieve document file data from BLOB storage
     
@@ -180,15 +204,7 @@ def get_document_file(request_id):
     return None, None
 
 def reject_request(request_id, rejection_reason):
-    """Reject a document request
-    
-    Args:
-        request_id: Request ID
-        rejection_reason: Reason for rejection
-    
-    Returns:
-        bool: True if successful, False otherwise
-    """
+    """Reject a document request"""
     db = get_database()
     query = """
     UPDATE document_requests
@@ -203,18 +219,12 @@ def reject_request(request_id, rejection_reason):
         # Clear caches
         get_incoming_requests.clear()
         get_outgoing_requests.clear()
+        get_all_requests_for_company.clear()
     
     return result
 
 def cancel_request(request_id):
-    """Cancel a pending request
-    
-    Args:
-        request_id: Request ID
-    
-    Returns:
-        bool: True if successful, False otherwise
-    """
+    """Cancel a pending request"""
     db = get_database()
     query = """
     UPDATE document_requests
@@ -229,18 +239,13 @@ def cancel_request(request_id):
         # Clear caches
         get_incoming_requests.clear()
         get_outgoing_requests.clear()
+        get_all_requests_for_company.clear()
     
     return result
 
+@st.cache_data(ttl=600)  # Cache for 10 minutes
 def get_request_statistics(company_id):
-    """Get statistics for a company's document requests
-    
-    Args:
-        company_id: Company ID
-    
-    Returns:
-        dict: Statistics including counts by status
-    """
+    """Get statistics for a company's document requests"""
     db = get_database()
     query = """
     SELECT 
