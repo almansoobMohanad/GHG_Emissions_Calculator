@@ -199,6 +199,26 @@ class DatabaseSetup:
                     INDEX idx_cosiri_type (document_type),
                     INDEX idx_cosiri_active (is_active)
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+            """,
+
+            'document_requests': """
+                CREATE TABLE IF NOT EXISTS document_requests (
+                    request_id INT AUTO_INCREMENT PRIMARY KEY,
+                    from_company_id INT NOT NULL,
+                    to_company_id INT NOT NULL,
+                    document_type VARCHAR(50) NOT NULL,
+                    request_note TEXT,
+                    status VARCHAR(20) DEFAULT 'pending',
+                    pdf_filename VARCHAR(255),
+                    rejection_reason TEXT,
+                    request_date DATETIME NOT NULL,
+                    completed_date DATETIME,
+                    FOREIGN KEY (from_company_id) REFERENCES companies(id) ON DELETE CASCADE,
+                    FOREIGN KEY (to_company_id) REFERENCES companies(id) ON DELETE CASCADE,
+                    INDEX idx_from_company (from_company_id),
+                    INDEX idx_to_company (to_company_id),
+                    INDEX idx_status (status)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
             """
         }
         
