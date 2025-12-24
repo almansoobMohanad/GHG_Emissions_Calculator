@@ -1,5 +1,5 @@
 """
-Add Emissions - Data entry form (with proper cache invalidation)
+Add Emissions - Data entry form (with filtered sources per company)
 """
 import streamlit as st
 import sys
@@ -7,11 +7,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from core.cache import (
-    get_database, 
-    get_ghg_categories, 
-    clear_emissions_cache
-)
+from core.cache import get_database, clear_emissions_cache
+from core.emission_factors import get_active_visible_sources
 from config.constants import REPORTING_PERIODS
 
 # Check authentication
@@ -39,10 +36,11 @@ if not st.session_state.company_id:
     st.error("❌ No company assigned. Please contact an administrator.")
     st.stop()
 
-# Load emission sources (cached)
-sources = get_ghg_categories()
+# Load emission sources (only active and visible for this company)
+sources = get_active_visible_sources(st.session_state.company_id)
 if not sources:
-    st.error("❌ Unable to load emission sources. Please try again later.")
+    st.warning("❌ No emission sources are currently active for your company.")
+    st.info("💡 **Tip:** Ask your manager to activate emission sources in the '⚙️ Manage Emission Factors' page.")
     st.stop()
 
 # ============================================================================
