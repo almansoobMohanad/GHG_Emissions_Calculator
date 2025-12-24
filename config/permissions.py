@@ -17,6 +17,7 @@ PAGE_PERMISSIONS = {
         '08_📋_SEDG_Report.py',
         '09_📝_iESG_Ready.py',
         '10_📤_Document_Requests.py',  # ✅ Added Document Requests
+        '11_⚙️_Manage_Emission_Factors.py',
     ],
     'manager': [
         '01_🏠_Dashboard.py',
@@ -26,6 +27,7 @@ PAGE_PERMISSIONS = {
         '08_📋_SEDG_Report.py',
         '09_📝_iESG_Ready.py',
         '10_📤_Document_Requests.py',  # ✅ Manager can request/share documents
+        '11_⚙️_Manage_Emission_Factors.py',
     ],
     'normal_user': [
         '01_🏠_Dashboard.py',
