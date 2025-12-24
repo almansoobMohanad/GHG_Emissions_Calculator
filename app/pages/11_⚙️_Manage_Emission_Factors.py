@@ -27,10 +27,18 @@ from core.emission_factors import (
     clear_all_source_caches
 )
 
+from components.company_verification import enforce_company_verification
+
 # Check permissions
 check_page_permission('11_⚙️_Manage_Emission_Factors.py')
 
 st.set_page_config(page_title="Manage Emission Factors", page_icon="⚙️", layout="wide")
+
+# Enforce company verification
+status = enforce_company_verification(st.session_state.get('company_id'))
+if status == 'no_company':
+    st.error("❌ No company assigned to your account.")
+    st.stop()
 
 # Sidebar
 with st.sidebar:

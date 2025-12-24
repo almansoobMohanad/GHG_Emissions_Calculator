@@ -16,6 +16,7 @@ from core.cache import (
 )
 from core.permissions import check_page_permission, show_permission_badge, can_user
 from config.permissions import get_role_display_name
+from components.company_verification import enforce_company_verification
 
 # Check authentication and permissions
 check_page_permission('01_🏠_Dashboard.py')
@@ -53,74 +54,12 @@ st.markdown(f"Welcome back, **{st.session_state.username}**! ({get_role_display_
 st.divider()
 
 # ============================================================================
-# NEW: Check if company is pending verification
+# Company verification enforcement (extracted to component)
 # ============================================================================
-if st.session_state.company_id:
-    company = get_company_info(st.session_state.company_id)
-    
-    if company and company['verification_status'] == 'pending':
-        # Show pending verification message
-        st.warning(f"""
-        ### ⏳ Company Pending Verification
-        
-        Your company **{company['company_name']}** is currently awaiting administrator verification.
-        
-        **What this means:**
-        - ✅ You can explore the dashboard and view features
-        - ⏳ Adding emissions and generating reports will be available once verified
-        - 📧 An administrator will review your registration soon
-        
-        **What happens next:**
-        Once an administrator verifies your company, you'll have full access to all features including:
-        - Adding emission entries
-        - Generating reports
-        - Managing company data
-        """)
-        
-        st.divider()
-        
-        # Show limited preview
-        st.info("📊 **Preview:** This is what your dashboard will look like after verification")
-        
-        # Show empty state preview
-        col1, col2 = st.columns([2, 1])
-        
-        with col1:
-            st.subheader("📊 Emissions Overview (Preview)")
-            col_a, col_b, col_c, col_d = st.columns(4)
-            
-            with col_a:
-                st.metric("Total Emissions", "0.00 tCO2e", help="Total emissions across all scopes")
-            with col_b:
-                st.metric("Scope 1", "0.00 tCO2e", help="Direct emissions")
-            with col_c:
-                st.metric("Scope 2", "0.00 tCO2e", help="Indirect emissions from energy")
-            with col_d:
-                st.metric("Scope 3", "0.00 tCO2e", help="Other indirect emissions")
-            
-            st.caption("💡 Start tracking emissions once your company is verified")
-        
-        with col2:
-            st.subheader("🎯 Available After Verification")
-            st.markdown("""
-            - ➕ Add New Emission
-            - 📊 View All Data
-            - 📋 Generate Report
-            - And more...
-            """)
-        
-        st.stop()  # Stop here and don't show the rest of the dashboard
-    
-    # If company is rejected
-    elif company and company['verification_status'] == 'rejected':
-        st.error(f"""
-        ### ❌ Company Verification Rejected
-        
-        Unfortunately, your company **{company['company_name']}** was not verified.
-        
-        Please contact an administrator for more information or to re-submit your company registration.
-        """)
-        st.stop()
+status = enforce_company_verification(st.session_state.get('company_id'))
+if status == 'no_company':
+    st.warning("⚠️ No company assigned to your account. Please contact an administrator.")
+    st.divider()
 
 # ============================================================================
 # NORMAL DASHBOARD (Only shown if company is verified or user is admin)

@@ -18,11 +18,18 @@ from core.cache import (
     get_company_users,
     update_company
 )
+from components.company_verification import enforce_company_verification
 
 # Check permissions
 check_page_permission('05_⚙️_Admin_Panel.py')
 
 st.set_page_config(page_title="Admin Panel", page_icon="⚙️", layout="wide")
+
+# Enforce company verification
+status = enforce_company_verification(st.session_state.get('company_id'))
+if status == 'no_company':
+    st.error("❌ No company assigned to your account. Please contact an administrator.")
+    st.stop()
 
 # Sidebar
 with st.sidebar:

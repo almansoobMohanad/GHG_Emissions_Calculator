@@ -12,11 +12,18 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from core.permissions import check_page_permission, show_permission_badge
 from core.cache import get_company_info
+from components.company_verification import enforce_company_verification
 
 # Check permissions
 check_page_permission('09_📝_iESG_Ready.py')
 
 st.set_page_config(page_title="i-ESG Ready", page_icon="📝", layout="wide")
+
+# Enforce company verification
+status = enforce_company_verification(st.session_state.get('company_id'))
+if status == 'no_company':
+    st.error("❌ No company assigned.")
+    st.stop()
 
 # Sidebar
 with st.sidebar:

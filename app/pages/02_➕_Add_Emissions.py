@@ -10,6 +10,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from core.cache import get_database, clear_emissions_cache
 from core.emission_factors import get_active_visible_sources
 from config.constants import REPORTING_PERIODS
+from components.company_verification import enforce_company_verification
 
 # Check authentication
 if not st.session_state.get('authenticated', False):
@@ -31,8 +32,9 @@ st.title("➕ Add Emission Entry")
 st.markdown("Record a new greenhouse gas emission for your company")
 st.divider()
 
-# Check company assignment
-if not st.session_state.company_id:
+# Enforce company verification
+status = enforce_company_verification(st.session_state.get('company_id'))
+if status == 'no_company':
     st.error("❌ No company assigned. Please contact an administrator.")
     st.stop()
 

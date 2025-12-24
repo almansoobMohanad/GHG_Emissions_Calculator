@@ -10,6 +10,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from core.permissions import check_page_permission, show_permission_badge
 from core.cache import get_unverified_emissions, verify_emission, reject_emission
+from components.company_verification import enforce_company_verification
 
 # Check permissions (only managers and admins can access)
 check_page_permission('04_✅_Verify_Data.py')
@@ -29,8 +30,9 @@ st.title("✅ Verify Emissions Data")
 st.markdown("**Review and approve unverified emission entries**")
 st.divider()
 
-# Check company assignment
-if not st.session_state.company_id:
+# Enforce company verification
+status = enforce_company_verification(st.session_state.get('company_id'))
+if status == 'no_company':
     st.error("❌ No company assigned to your account.")
     st.stop()
 

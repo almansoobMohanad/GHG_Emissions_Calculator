@@ -19,11 +19,20 @@ from core.cache import (
     delete_user
 )
 from core.authentication import hash_password
+from components.company_verification import enforce_company_verification
 
 # Check permissions
 check_page_permission('06_👥_User_Management.py')
 
+
 st.set_page_config(page_title="User Management", page_icon="👥", layout="wide")
+
+
+# Enforce company verification
+status = enforce_company_verification(st.session_state.get('company_id'))
+if status == 'no_company':
+    st.error("❌ No company assigned to your account. Please contact an administrator.")
+    st.stop()
 
 # Sidebar
 with st.sidebar:

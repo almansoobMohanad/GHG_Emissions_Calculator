@@ -22,11 +22,20 @@ from core.document_requests import (
     reject_request,
     cancel_request
 )
+from components.company_verification import enforce_company_verification
 
 # Check permissions
 check_page_permission('10_📤_Document_Requests.py')
 
 st.set_page_config(page_title="Document Requests", page_icon="📤", layout="wide")
+
+
+
+# Enforce company verification
+status = enforce_company_verification(st.session_state.get('company_id'))
+if status == 'no_company':
+    st.error("❌ No department assigned to your account.")
+    st.stop()
 
 # Sidebar
 with st.sidebar:

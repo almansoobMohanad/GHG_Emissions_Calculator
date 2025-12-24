@@ -10,6 +10,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from core.cache import get_emissions_data  # ← Using your cached function!
 from config.constants import REPORTING_PERIODS
+from components.company_verification import enforce_company_verification
 
 # Check authentication
 if not st.session_state.get('authenticated', False):
@@ -29,7 +30,8 @@ with st.sidebar:
 
 st.title("📊 View Emissions Data")
 
-if not st.session_state.company_id:
+status = enforce_company_verification(st.session_state.get('company_id'))
+if status == 'no_company':
     st.error("❌ No company assigned. Please contact an administrator.")
     st.stop()
 
