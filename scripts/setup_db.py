@@ -140,9 +140,17 @@ class DatabaseSetup:
                     region VARCHAR(50) DEFAULT 'UK',
                     source_reference VARCHAR(255) NULL,
                     is_active BOOLEAN DEFAULT TRUE,
+                    source_type ENUM('system', 'custom') DEFAULT 'system',
+                    company_id INT NULL,
+                    is_visible_in_ui BOOLEAN DEFAULT TRUE,
+                    data_source_reference VARCHAR(500) NULL,
+                    version INT DEFAULT 1,
+                    superseded_by INT NULL,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                     FOREIGN KEY (category_id) REFERENCES ghg_categories(id) ON DELETE RESTRICT,
+                    FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE,
+                    FOREIGN KEY (superseded_by) REFERENCES ghg_emission_sources(id) ON DELETE SET NULL,
                     INDEX idx_sources_category (category_id),
                     INDEX idx_sources_code (source_code),
                     INDEX idx_sources_active (is_active)
@@ -219,6 +227,21 @@ class DatabaseSetup:
                     INDEX idx_from_company (from_company_id),
                     INDEX idx_to_company (to_company_id),
                     INDEX idx_status (status)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+            """,
+
+            'ghg_source_history': """
+                CREATE TABLE IF NOT EXISTS ghg_source_history (
+                    history_id INT AUTO_INCREMENT PRIMARY KEY,
+                    source_id INT NOT NULL,
+                    emission_factor DECIMAL(15,8) NOT NULL,
+                    changed_by INT NOT NULL,
+                    changed_at DATETIME NOT NULL,
+                    change_reason TEXT,
+                    FOREIGN KEY (source_id) REFERENCES ghg_emission_sources(id) ON DELETE CASCADE,
+                    FOREIGN KEY (changed_by) REFERENCES users(id) ON DELETE RESTRICT,
+                    INDEX idx_source (source_id),
+                    INDEX idx_changed_at (changed_at)
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
             """
         }
