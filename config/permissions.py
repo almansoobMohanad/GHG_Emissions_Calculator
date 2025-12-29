@@ -40,6 +40,7 @@ PAGE_PERMISSIONS = {
 # Feature permissions by role
 FEATURE_PERMISSIONS = {
     'can_add_emissions': ['admin', 'manager', 'normal_user'],
+    'can_add_bulk_emissions': ['admin', 'manager'],
     'can_view_data': ['admin', 'manager', 'normal_user'],
     'can_edit_emissions': ['admin', 'manager'],
     'can_delete_emissions': ['admin', 'manager'],
