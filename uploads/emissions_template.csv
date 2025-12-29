@@ -1,0 +1,4 @@
+source_code,reporting_period,activity_data,data_source,calculation_method,notes
+S2-E-001,2024,1500.50,utility bill,DEFRA 2024,Main office electricity
+S2-H-002,2024,2300.75,meter reading,DEFRA 2024,Heating gas for building
+S2-E-001,2024,1650.25,utility bill,DEFRA 2024,Main office electricity
