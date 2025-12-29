@@ -11,6 +11,7 @@ from core.cache import get_database, clear_emissions_cache
 from core.emission_factors import get_active_visible_sources
 from config.constants import REPORTING_PERIODS
 from components.company_verification import enforce_company_verification
+from components.bulk_emissions_upload import render_bulk_upload_section
 
 # Check authentication
 if not st.session_state.get('authenticated', False):
@@ -258,3 +259,10 @@ if submitted:
     
     finally:
         db.disconnect()
+
+st.divider()
+
+# ============================================================================
+# BULK UPLOAD SECTION - Admins & Managers Only
+# ============================================================================
+render_bulk_upload_section(sources)
