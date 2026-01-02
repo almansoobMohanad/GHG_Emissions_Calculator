@@ -10,7 +10,7 @@ from datetime import datetime
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from core.permissions import check_page_permission, show_permission_badge
-from core.cache import get_company_info, get_sedg_ghg_data
+from core.cache import get_company_info, get_emissions_summary, get_sedg_ghg_data
 from core.sedg_pdf import generate_sedg_pdf
 from components.company_verification import enforce_company_verification
 
@@ -248,7 +248,9 @@ st.divider()
 
 # Get GHG data
 reporting_period = st.session_state.sedg_period
-ghg_data = get_sedg_ghg_data(st.session_state.company_id, reporting_period)
+
+# Primary: same helper as dashboard (exact period match)
+ghg_data = get_emissions_summary(st.session_state.company_id, reporting_period)
 
 # Tabs
 tab1, tab2, tab3 = st.tabs(["🌍 Environmental", "👥 Social", "⚖️ Governance"])
