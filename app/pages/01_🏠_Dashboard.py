@@ -6,6 +6,7 @@ import sys
 from pathlib import Path
 import plotly.express as px
 import plotly.graph_objects as go
+from datetime import datetime
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
@@ -62,6 +63,35 @@ if status == 'no_company':
     st.divider()
 
 # ============================================================================
+# YEAR SELECTOR
+# ============================================================================
+if st.session_state.company_id:
+    # Get current year as default
+    current_year = datetime.now().year
+    
+    # Generate year options (e.g., from 2020 to current year + 1)
+    year_options = list(range(2020, current_year + 2))
+    
+    # Initialize session state for selected year if not exists
+    if 'selected_year' not in st.session_state:
+        st.session_state.selected_year = current_year
+    
+    # Year selector at the top
+    col_year, col_spacer = st.columns([1, 3])
+    with col_year:
+        selected_year = st.selectbox(
+            "📅 Select Year",
+            options=year_options,
+            index=year_options.index(st.session_state.selected_year) if st.session_state.selected_year in year_options else year_options.index(current_year),
+            help="View emissions data for a specific year",
+            key="year_selector"
+        )
+        # Update session state
+        st.session_state.selected_year = selected_year
+    
+    st.divider()
+
+# ============================================================================
 # NORMAL DASHBOARD (Only shown if company is verified or user is admin)
 # ============================================================================
 
@@ -70,10 +100,10 @@ if st.session_state.company_id:
     col1, col2 = st.columns([2, 1])
     
     with col1:
-        st.subheader("📊 Emissions Overview (2024)")
+        st.subheader(f"📊 Emissions Overview ({st.session_state.selected_year})")
         
-        # CACHED: Get emissions summary
-        summary = get_emissions_summary(st.session_state.company_id, "2024")
+        # CACHED: Get emissions summary for selected year
+        summary = get_emissions_summary(st.session_state.company_id, str(st.session_state.selected_year))
         
         col_a, col_b, col_c, col_d = st.columns(4)
         
@@ -91,7 +121,7 @@ if st.session_state.company_id:
                      help="Other indirect emissions")
         
         if summary['total'] == 0:
-            st.info("💡 No emissions data recorded for 2024. Start by adding your first emission entry!")
+            st.info(f"💡 No emissions data recorded for {st.session_state.selected_year}. Start by adding your first emission entry!")
     
     with col2:
         st.subheader("🎯 Quick Actions")
@@ -121,76 +151,86 @@ else:
 
 st.divider()
 
-# Charts section - USING CACHED DATA
+# Charts section - USING CACHED DATA FILTERED BY SELECTED YEAR
 if st.session_state.company_id:
     # CACHED: Get emissions data for analytics
     emissions_data = get_company_emissions_for_analytics(st.session_state.company_id)
     
+    # Filter data by selected year
     if emissions_data:
-        st.subheader("📈 Analytics & Insights")
+        # Filter emissions for the selected year
+        filtered_emissions = [
+            record for record in emissions_data 
+            if str(st.session_state.selected_year) in record['reporting_period']
+        ]
         
-        # Process data
-        scope_data = {}
-        source_data = {}
-        period_data = {}
-        
-        for record in emissions_data:
-            period = record['reporting_period']
-            scope_num = record['scope_number']
-            source = record['source_name']
-            co2e_kg = record['co2_equivalent']
+        if filtered_emissions:
+            st.subheader(f"📈 Analytics & Insights ({st.session_state.selected_year})")
             
-            scope_key = f"Scope {scope_num}"
-            scope_data[scope_key] = scope_data.get(scope_key, 0) + co2e_kg
-            source_data[source] = source_data.get(source, 0) + co2e_kg
-            period_data[period] = period_data.get(period, 0) + co2e_kg
-        
-        # Create charts
-        chart_col1, chart_col2 = st.columns(2)
-        
-        with chart_col1:
-            if scope_data:
-                fig_pie = px.pie(
-                    values=list(scope_data.values()),
-                    names=list(scope_data.keys()),
-                    title="CO₂e Distribution by Scope",
-                    color_discrete_sequence=px.colors.qualitative.Set2
+            # Process data
+            scope_data = {}
+            source_data = {}
+            period_data = {}
+            
+            for record in filtered_emissions:
+                period = record['reporting_period']
+                scope_num = record['scope_number']
+                source = record['source_name']
+                co2e_kg = record['co2_equivalent']
+                
+                scope_key = f"Scope {scope_num}"
+                scope_data[scope_key] = scope_data.get(scope_key, 0) + co2e_kg
+                source_data[source] = source_data.get(source, 0) + co2e_kg
+                period_data[period] = period_data.get(period, 0) + co2e_kg
+            
+            # Create charts
+            chart_col1, chart_col2 = st.columns(2)
+            
+            with chart_col1:
+                if scope_data:
+                    fig_pie = px.pie(
+                        values=list(scope_data.values()),
+                        names=list(scope_data.keys()),
+                        title=f"CO₂e Distribution by Scope ({st.session_state.selected_year})",
+                        color_discrete_sequence=px.colors.qualitative.Set2
+                    )
+                    fig_pie.update_traces(textposition='inside', textinfo='percent+label')
+                    st.plotly_chart(fig_pie, use_container_width=True)
+            
+            with chart_col2:
+                if period_data:
+                    sorted_periods = sorted(period_data.items())
+                    fig_line = go.Figure()
+                    fig_line.add_trace(go.Scatter(
+                        x=[p[0] for p in sorted_periods],
+                        y=[p[1] for p in sorted_periods],
+                        mode='lines+markers',
+                        name='CO₂e',
+                        line=dict(dash='dot', width=2),
+                        marker=dict(size=10)
+                    ))
+                    fig_line.update_layout(
+                        title=f"CO₂e Trend by Reporting Period ({st.session_state.selected_year})",
+                        xaxis_title="Reporting Period",
+                        yaxis_title="CO₂e (kg)",
+                        hovermode='x unified'
+                    )
+                    st.plotly_chart(fig_line, use_container_width=True)
+            
+            if source_data:
+                sorted_sources = sorted(source_data.items(), key=lambda x: x[1], reverse=True)[:10]
+                fig_bar = px.bar(
+                    x=[s[1] for s in sorted_sources],
+                    y=[s[0] for s in sorted_sources],
+                    orientation='h',
+                    title=f"Top 10 Emission Sources by CO₂e ({st.session_state.selected_year})",
+                    labels={'x': 'CO₂e (kg)', 'y': 'Emission Source'},
+                    color=[s[1] for s in sorted_sources],
+                    color_continuous_scale='Viridis'
                 )
-                fig_pie.update_traces(textposition='inside', textinfo='percent+label')
-                st.plotly_chart(fig_pie, use_container_width=True)
-        
-        with chart_col2:
-            if period_data:
-                sorted_periods = sorted(period_data.items())
-                fig_line = go.Figure()
-                fig_line.add_trace(go.Scatter(
-                    x=[p[0] for p in sorted_periods],
-                    y=[p[1] for p in sorted_periods],
-                    mode='lines+markers',
-                    name='CO₂e',
-                    line=dict(dash='dot', width=2),
-                    marker=dict(size=10)
-                ))
-                fig_line.update_layout(
-                    title="CO₂e Trend by Reporting Period",
-                    xaxis_title="Reporting Period",
-                    yaxis_title="CO₂e (kg)",
-                    hovermode='x unified'
-                )
-                st.plotly_chart(fig_line, use_container_width=True)
-        
-        if source_data:
-            sorted_sources = sorted(source_data.items(), key=lambda x: x[1], reverse=True)[:10]
-            fig_bar = px.bar(
-                x=[s[1] for s in sorted_sources],
-                y=[s[0] for s in sorted_sources],
-                orientation='h',
-                title="Top 10 Emission Sources by CO₂e",
-                labels={'x': 'CO₂e (kg)', 'y': 'Emission Source'},
-                color=[s[1] for s in sorted_sources],
-                color_continuous_scale='Viridis'
-            )
-            fig_bar.update_layout(showlegend=False, height=400)
-            st.plotly_chart(fig_bar, use_container_width=True)
+                fig_bar.update_layout(showlegend=False, height=400)
+                st.plotly_chart(fig_bar, use_container_width=True)
+        else:
+            st.info(f"📊 No emissions data found for {st.session_state.selected_year}. Charts will appear here once you add emission data for this year.")
     else:
         st.info("📊 Charts will appear here once you add emission data.")
