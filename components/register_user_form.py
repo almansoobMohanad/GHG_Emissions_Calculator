@@ -101,74 +101,77 @@ def render_register_form():
     # Fetch verified companies
     companies = get_verified_companies_for_registration()
     
-    with st.form("register_form", clear_on_submit=False):
-        # User Information Section
-        st.markdown("#### 👤 User Information")
-        
-        col1, col2 = st.columns(2)
-        with col1:
-            username = st.text_input("Username *", placeholder="Choose a username")
-            email = st.text_input("Email *", placeholder="your.email@company.com")
-        
-        with col2:
-            password = st.text_input("Password *", type="password", placeholder="At least 6 characters")
-            password_confirm = st.text_input("Confirm Password *", type="password", placeholder="Re-enter password")
-        
-        st.divider()
-        
-        # Company Selection Section
-        st.markdown("#### 🏢 Company Association")
-        
-        registration_type = st.radio(
-            "How would you like to proceed?",
-            options=["existing", "new"],
-            format_func=lambda x: "Join an Existing Company" if x == "existing" else "Register a New Company",
-            help="Select whether to join a verified company or register your own"
-        )
-        
-        # Initialize variables
-        selected_company_id = None
-        company_data = None
-        
-        if registration_type == "existing":
-            if companies:
-                st.info(f"💡 {len(companies)} verified companies available to join")
-                
-                # Create company options
-                company_options = {c['id']: f"{c['company_name']} ({c['company_code']}) - {c['industry_sector']}" 
-                                 for c in companies}
-                
-                selected_company_id = st.selectbox(
-                    "Select Company *",
-                    options=list(company_options.keys()),
-                    format_func=lambda x: company_options[x],
-                    help="Choose the company you want to join"
-                )
-                
-                st.caption("📝 You will be registered as a normal user in this company")
-            else:
-                st.warning("⚠️ No verified companies available. Please register a new company instead.")
-                registration_type = "new"  # Force new company registration
-        
-        if registration_type == "new":
-            company_data = render_company_fields()
-            st.caption("📝 You will be registered as a manager for this company (pending verification)")
-        
-        st.divider()
-        
-        # Submit buttons
-        col_a, col_b = st.columns(2)
-        with col_a:
-            register_btn = st.form_submit_button("✅ Register", type="primary", use_container_width=True)
-        with col_b:
-            back_btn = st.form_submit_button("🔙 Back to Login", use_container_width=True)
-        
-        if back_btn:
-            st.session_state.show_register = False
-            st.rerun()
-        
-        if register_btn:
-            handle_registration(
-                username, email, password, password_confirm,
-                registration_type, selected_company_id, company_data
+    # User Information Section (outside form for better UX)
+    st.markdown("#### 👤 User Information")
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        username = st.text_input("Username *", placeholder="Choose a username", key="reg_username")
+        email = st.text_input("Email *", placeholder="your.email@company.com", key="reg_email")
+    
+    with col2:
+        password = st.text_input("Password *", type="password", placeholder="At least 6 characters", key="reg_password")
+        password_confirm = st.text_input("Confirm Password *", type="password", placeholder="Re-enter password", key="reg_password_confirm")
+    
+    st.divider()
+    
+    # Company Selection Section (outside form so it updates immediately)
+    st.markdown("#### 🏢 Company Association")
+    
+    registration_type = st.radio(
+        "How would you like to proceed?",
+        options=["existing", "new"],
+        format_func=lambda x: "Join an Existing Company" if x == "existing" else "Register a New Company",
+        help="Select whether to join a verified company or register your own",
+        key="reg_type"
+    )
+    
+    # Initialize variables
+    selected_company_id = None
+    company_data = None
+    
+    # Show appropriate fields based on selection (immediately visible)
+    if registration_type == "existing":
+        if companies:
+            st.info(f"💡 {len(companies)} verified companies available to join")
+            
+            # Create company options
+            company_options = {c['id']: f"{c['company_name']} ({c['company_code']}) - {c['industry_sector']}" 
+                             for c in companies}
+            
+            selected_company_id = st.selectbox(
+                "Select Company *",
+                options=list(company_options.keys()),
+                format_func=lambda x: company_options[x],
+                help="Choose the company you want to join",
+                key="reg_company_select"
             )
+            
+            st.caption("📝 You will be registered as a normal user in this company")
+        else:
+            st.warning("⚠️ No verified companies available. Please register a new company instead.")
+            # Don't force new registration, let user see the warning
+    
+    elif registration_type == "new":
+        # Company fields now show immediately when "Register a New Company" is selected
+        company_data = render_company_fields()
+        st.caption("📝 You will be registered as a manager for this company (pending verification)")
+    
+    st.divider()
+    
+    # Submit buttons
+    col_a, col_b = st.columns(2)
+    with col_a:
+        register_btn = st.button("✅ Register", type="primary", use_container_width=True, key="reg_submit")
+    with col_b:
+        back_btn = st.button("🔙 Back to Login", use_container_width=True, key="reg_back")
+    
+    if back_btn:
+        st.session_state.show_register = False
+        st.rerun()
+    
+    if register_btn:
+        handle_registration(
+            username, email, password, password_confirm,
+            registration_type, selected_company_id, company_data
+        )
