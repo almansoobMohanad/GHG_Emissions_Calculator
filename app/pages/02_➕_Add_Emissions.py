@@ -46,6 +46,10 @@ if not sources:
     st.info("💡 **Tip:** Ask your manager to activate emission sources in the '⚙️ Manage Emission Factors' page.")
     st.stop()
 
+# Initialize form reset flag in session state
+if 'reset_form' not in st.session_state:
+    st.session_state.reset_form = False
+
 # ============================================================================
 # STEP 1: Select Scope
 # ============================================================================
@@ -129,7 +133,12 @@ if selected_source.get('region'):
 # ============================================================================
 st.subheader("📝 Step 4: Enter Emission Data")
 
-with st.form("add_emission_form"):
+# Reset form values if flag is set
+if st.session_state.reset_form:
+    st.session_state.reset_form = False
+    st.rerun()
+
+with st.form("add_emission_form", clear_on_submit=True):
     col1, col2 = st.columns(2)
     
     with col1:
@@ -139,10 +148,12 @@ with st.form("add_emission_form"):
             help="The time period this emission data represents"
         )
         
+        # Activity data will reset to 0.0 after form submission due to clear_on_submit=True
         activity_data = st.number_input(
             f"Activity Data ({selected_source['unit'].split('/')[-1] if '/' in selected_source['unit'] else 'units'}) *",
             min_value=0.0,
             step=0.01,
+            value=0.0,
             help=f"Enter the activity value. Will be multiplied by emission factor ({selected_source['emission_factor']} {selected_source['unit']})"
         )
     
@@ -245,6 +256,9 @@ if submitted:
             """)
             
             st.balloons()
+            
+            # Set flag to reset form on next rerun
+            st.session_state.reset_form = True
             
             # Option to add another
             col1, col2 = st.columns(2)
