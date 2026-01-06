@@ -130,18 +130,26 @@ def render_bulk_upload_section(sources):
         preview_rows = min(10, len(df))
         st.dataframe(df.head(preview_rows), use_container_width=True, hide_index=True)
         
+        # Auto-verification checkbox
+        auto_verify = st.checkbox(
+            "Auto-verify all imported emissions",
+            value=True,
+            help="Automatically mark all imported emissions as verified. This skips the need to verify them one by one later."
+        )
+        
         # Import button
         if st.button("💾 Import Emissions", type="primary", use_container_width=True):
-            _process_bulk_upload(df, sources)
+            _process_bulk_upload(df, sources, auto_verify)
 
 
-def _process_bulk_upload(df: pd.DataFrame, sources: list):
+def _process_bulk_upload(df: pd.DataFrame, sources: list, auto_verify: bool = False):
     """
     Process and insert bulk upload data into database.
     
     Args:
         df: DataFrame with emission data
         sources: List of available emission sources
+        auto_verify: If True, automatically verify all imported emissions
     """
     db = get_database()
     if not db.connect():
@@ -151,14 +159,24 @@ def _process_bulk_upload(df: pd.DataFrame, sources: list):
     # Build source lookup
     sources_by_code = {s["source_code"]: s for s in sources}
     
-    # Insert query
-    insert_query = """
-        INSERT INTO emissions_data (
-            company_id, user_id, emission_source_id,
-            reporting_period, activity_data, emission_factor,
-            co2_equivalent, data_source, calculation_method, notes
-        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-    """
+    # Insert query - adjust based on auto_verify flag
+    if auto_verify:
+        insert_query = """
+            INSERT INTO emissions_data (
+                company_id, user_id, emission_source_id,
+                reporting_period, activity_data, emission_factor,
+                co2_equivalent, data_source, calculation_method, notes,
+                verification_status, verified_by, verified_at
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'verified', %s, NOW())
+        """
+    else:
+        insert_query = """
+            INSERT INTO emissions_data (
+                company_id, user_id, emission_source_id,
+                reporting_period, activity_data, emission_factor,
+                co2_equivalent, data_source, calculation_method, notes
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """
     
     success_count = 0
     failures = []
@@ -196,18 +214,33 @@ def _process_bulk_upload(df: pd.DataFrame, sources: list):
         co2_equivalent = activity * emission_factor
         
         # Prepare parameters
-        params = (
-            st.session_state.company_id,
-            st.session_state.user_id,
-            source["id"],
-            rpt,
-            activity,
-            emission_factor,
-            co2_equivalent,
-            row.get("data_source") or None,
-            row.get("calculation_method") or None,
-            row.get("notes") or None,
-        )
+        if auto_verify:
+            params = (
+                st.session_state.company_id,
+                st.session_state.user_id,
+                source["id"],
+                rpt,
+                activity,
+                emission_factor,
+                co2_equivalent,
+                row.get("data_source") or None,
+                row.get("calculation_method") or None,
+                row.get("notes") or None,
+                st.session_state.user_id,  # verified_by
+            )
+        else:
+            params = (
+                st.session_state.company_id,
+                st.session_state.user_id,
+                source["id"],
+                rpt,
+                activity,
+                emission_factor,
+                co2_equivalent,
+                row.get("data_source") or None,
+                row.get("calculation_method") or None,
+                row.get("notes") or None,
+            )
         
         # Execute insert
         try:
@@ -223,7 +256,10 @@ def _process_bulk_upload(df: pd.DataFrame, sources: list):
     
     # Show results
     st.divider()
-    st.success(f"✅ Import complete: **{success_count} emissions** imported successfully!")
+    if auto_verify:
+        st.success(f"✅ Import complete: **{success_count} emissions** imported and verified successfully!")
+    else:
+        st.success(f"✅ Import complete: **{success_count} emissions** imported successfully!")
     
     if failures:
         st.warning(f"⚠️ **{len(failures)} rows failed** to import:")
