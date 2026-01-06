@@ -43,20 +43,45 @@ with st.sidebar:
     st.write(f"**User:** {st.session_state.username}")
     st.write(f"**Role:** {st.session_state.role.replace('_', ' ').title()}")
     
-    # Navigation within the page
-    st.divider()
-    st.subheader("Quick Navigation")
-    page_section = st.radio(
-        "Jump to:",
-        ["📊 Overview", "🎯 Reduction Goals", "💡 Action Plans", "📈 Year-over-Year", "📋 Reports"],
-        label_visibility="collapsed"
-    )
-    
     st.divider()
     if st.button("🚪 Logout", type="secondary", use_container_width=True):
         for key in list(st.session_state.keys()):
             del st.session_state[key]
         st.switch_page("main.py")
+
+# Initialize page_section in session state if not exists
+if 'page_section' not in st.session_state:
+    st.session_state.page_section = "📊 Overview"
+
+# Quick navigation buttons at the top
+st.markdown("### Quick Navigation")
+navigation_cols = st.columns(5)
+with navigation_cols[0]:
+    if st.button("📊 Overview", use_container_width=True, type="primary" if st.session_state.page_section == "📊 Overview" else "secondary"):
+        st.session_state.page_section = "📊 Overview"
+        st.rerun()
+
+with navigation_cols[1]:
+    if st.button("🎯 Reduction Goals", use_container_width=True, type="primary" if st.session_state.page_section == "🎯 Reduction Goals" else "secondary"):
+        st.session_state.page_section = "🎯 Reduction Goals"
+        st.rerun()
+
+with navigation_cols[2]:
+    if st.button("💡 Action Plans", use_container_width=True, type="primary" if st.session_state.page_section == "💡 Action Plans" else "secondary"):
+        st.session_state.page_section = "💡 Action Plans"
+        st.rerun()
+
+with navigation_cols[3]:
+    if st.button("📈 Year-over-Year", use_container_width=True, type="primary" if st.session_state.page_section == "📈 Year-over-Year" else "secondary"):
+        st.session_state.page_section = "📈 Year-over-Year"
+        st.rerun()
+
+with navigation_cols[4]:
+    if st.button("📋 Reports", use_container_width=True, type="primary" if st.session_state.page_section == "📋 Reports" else "secondary"):
+        st.session_state.page_section = "📋 Reports"
+        st.rerun()
+
+page_section = st.session_state.page_section
 
 st.title("🎯 Emissions Reduction Tracker")
 st.markdown("Track your climate action goals, initiatives, and progress over time")
@@ -190,10 +215,7 @@ if page_section == "📊 Overview":
     
     else:
         st.info("🎯 **No active reduction goal set yet.**")
-        st.markdown("Set your first reduction goal to start tracking progress!")
-        if st.button("➕ Set Reduction Goal", type="primary"):
-            st.session_state.page_section = "🎯 Reduction Goals"
-            st.rerun()
+        st.markdown("Go to the **Reduction Goals** tab to set your first reduction goal and start tracking progress!")
 
 # ============================================================================
 # SECTION 2: Reduction Goals Management
