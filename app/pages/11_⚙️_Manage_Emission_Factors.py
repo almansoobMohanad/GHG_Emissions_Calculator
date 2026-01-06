@@ -123,7 +123,79 @@ with col3:
         options=["All", "Active", "Inactive"],
         key="status_filter"
     )
-
+# ============================================================================
+# ADD CUSTOM SOURCE DIALOG (SHOW FIRST IF TRIGGERED)
+# ============================================================================
+if st.session_state.show_add_dialog:
+    st.info("✏️ **Add Custom Emission Source** - Fill in the details below and click 'Add Source'")
+    with st.form("add_custom_source_form"):
+        st.subheader("➕ Add Custom Emission Source")
+        
+        # Category selection
+        category_options = {f"{cat['category_code']} - {cat['category_name']}": cat['id'] 
+                          for cat in categories if cat['is_active']}
+        selected_category = st.selectbox("Category *", options=list(category_options.keys()))
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            source_name = st.text_input("Source Name *", placeholder="e.g., Factory Backup Generator")
+            emission_factor = st.number_input("Emission Factor *", min_value=0.0, format="%.8f", 
+                                             help="Enter the emission factor value")
+        with col2:
+            unit = st.selectbox("Unit *", options=[
+                "kg CO2e/kWh", "kg CO2e/litre", "kg CO2e/kg", "kg CO2e/km",
+                "kg CO2e/tonne.km", "kg CO2e/m³", "kg CO2e/room night", "kg CO2e/passenger.km"
+            ])
+            region = st.text_input("Region", value="Malaysia", placeholder="e.g., Malaysia, Global")
+        
+        description = st.text_area("Description", height=80,
+                                  placeholder="Describe this emission source...")
+        data_source_reference = st.text_input("Data Source Reference *",
+                                             placeholder="e.g., IPCC 2023, Manufacturer specs, Local authority",
+                                             help="Where did this emission factor come from?")
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            submit = st.form_submit_button("✅ Add Source", type="primary", use_container_width=True)
+        with col2:
+            cancel = st.form_submit_button("❌ Cancel", use_container_width=True)
+        
+        if cancel:
+            st.session_state.show_add_dialog = False
+            st.rerun()
+        
+        if submit:
+            # Validation
+            if not source_name or not data_source_reference:
+                st.error("Please fill in all required fields!")
+            else:
+                # Validate emission factor
+                is_valid, msg = validate_emission_factor(emission_factor, unit)
+                if not is_valid:
+                    st.error(f"❌ {msg}")
+                else:
+                    # Create source
+                    category_id = category_options[selected_category]
+                    result = create_custom_source(
+                        category_id=category_id,
+                        source_name=source_name,
+                        emission_factor=emission_factor,
+                        unit=unit,
+                        description=description,
+                        data_source_reference=data_source_reference,
+                        region=region,
+                        company_id=st.session_state.company_id,
+                        user_id=st.session_state.user_id
+                    )
+                    
+                    if result:
+                        st.success(f"✅ Custom source '{source_name}' created successfully!")
+                        st.session_state.show_add_dialog = False
+                        st.rerun()
+                    else:
+                        st.error("❌ Failed to create source. Please try again.")
+    
+    st.divider()
 # Search box
 search_term = st.text_input("🔎 Search sources", placeholder="Type to search by name or code...")
 
@@ -194,48 +266,55 @@ if len(filtered_sources) > 0:
     
     st.divider()
     
-    # Group by scope for better organization
+    # Group by scope and create tabs
+    scope_tabs = []
     for scope_num in [1, 2, 3]:
         scope_sources = [s for s in filtered_sources if s['scope_number'] == scope_num]
+        if scope_sources:
+            scope_name = scope_sources[0]['scope_name']
+            scope_tabs.append((f"Scope {scope_num}", scope_num, scope_name, scope_sources))
+    
+    if scope_tabs:
+        # Create tabs for each scope with sources
+        tab_list = st.tabs([tab[0] for tab in scope_tabs])
         
-        if not scope_sources:
-            continue
-        
-        scope_name = scope_sources[0]['scope_name']
-        
-        with st.expander(f"**Scope {scope_num}: {scope_name}** ({len(scope_sources)} sources)", expanded=True):
-            for source in scope_sources:
-                # Create columns for each source
-                col1, col2, col3 = st.columns([3, 1, 2])
+        for tab_idx, (tab_name, scope_num, scope_name, scope_sources) in enumerate(scope_tabs):
+            with tab_list[tab_idx]:
+                st.markdown(f"### {scope_name} ({len(scope_sources)} sources)")
+                st.divider()
                 
-                with col1:
-                    # Source info
-                    type_badge = "🔒" if source['source_type'] == 'system' else "⚙️"
-                    st.markdown(f"""
-                    **{type_badge} {source['source_name']}**  
-                    `{source['emission_factor']:.6f} {source['unit']}`  
-                    _{source['category_name']}_
-                    """)
-                
-                with col2:
-                    # Active toggle
-                    active_key = f"active_{source['id']}"
-                    if source['source_type'] == 'system':
-                        new_active = st.checkbox(
-                            "Show in Dropdown",
-                            value=source['is_active'],
-                            key=active_key,
-                            help="When checked, this source appears in Add Emissions"
-                        )
-                        if new_active != source['is_active']:
-                            if toggle_source_active(source['id'], new_active):
-                                st.rerun()
-                    else:
-                        st.checkbox("Show in Dropdown", value=True, disabled=True, key=active_key)
-                
-                with col3:
-                    # Actions
-                    action_col1, action_col2, action_col3 = st.columns(3)
+                for source in scope_sources:
+                    # Create columns for each source
+                    col1, col2, col3 = st.columns([3, 1, 2])
+                    
+                    with col1:
+                        # Source info
+                        type_badge = "🔒" if source['source_type'] == 'system' else "⚙️"
+                        st.markdown(f"""
+                        **{type_badge} {source['source_name']}**  
+                        `{source['emission_factor']:.6f} {source['unit']}`  
+                        _{source['category_name']}_
+                        """)
+                    
+                    with col2:
+                        # Active toggle
+                        active_key = f"active_{source['id']}"
+                        if source['source_type'] == 'system':
+                            new_active = st.checkbox(
+                                "Show in Dropdown",
+                                value=source['is_active'],
+                                key=active_key,
+                                help="When checked, this source appears in Add Emissions"
+                            )
+                            if new_active != source['is_active']:
+                                if toggle_source_active(source['id'], new_active):
+                                    st.rerun()
+                        else:
+                            st.checkbox("Show in Dropdown", value=True, disabled=True, key=active_key)
+                    
+                    with col3:
+                        # Actions
+                        action_col1, action_col2, action_col3 = st.columns(3)
                     
                     with action_col1:
                         if st.button("ℹ️", key=f"info_{source['id']}", help="View details"):
@@ -264,77 +343,6 @@ if len(filtered_sources) > 0:
                 st.divider()
 else:
     st.info("No sources found matching your filters.")
-
-# ============================================================================
-# ADD CUSTOM SOURCE DIALOG
-# ============================================================================
-if st.session_state.show_add_dialog:
-    with st.form("add_custom_source_form"):
-        st.subheader("➕ Add Custom Emission Source")
-        
-        # Category selection
-        category_options = {f"{cat['category_code']} - {cat['category_name']}": cat['id'] 
-                          for cat in categories if cat['is_active']}
-        selected_category = st.selectbox("Category *", options=list(category_options.keys()))
-        
-        col1, col2 = st.columns(2)
-        with col1:
-            source_name = st.text_input("Source Name *", placeholder="e.g., Factory Backup Generator")
-            emission_factor = st.number_input("Emission Factor *", min_value=0.0, format="%.8f", 
-                                             help="Enter the emission factor value")
-        with col2:
-            unit = st.selectbox("Unit *", options=[
-                "kg CO2e/kWh", "kg CO2e/litre", "kg CO2e/kg", "kg CO2e/km",
-                "kg CO2e/tonne.km", "kg CO2e/m³", "kg CO2e/room night", "kg CO2e/passenger.km"
-            ])
-            region = st.text_input("Region", value="Malaysia", placeholder="e.g., Malaysia, Global")
-        
-        description = st.text_area("Description", height=80,
-                                  placeholder="Describe this emission source...")
-        data_source_reference = st.text_input("Data Source Reference *",
-                                             placeholder="e.g., IPCC 2023, Manufacturer specs, Local authority",
-                                             help="Where did this emission factor come from?")
-        
-        col1, col2 = st.columns(2)
-        with col1:
-            submit = st.form_submit_button("✅ Add Source", type="primary", use_container_width=True)
-        with col2:
-            cancel = st.form_submit_button("❌ Cancel", use_container_width=True)
-        
-        if cancel:
-            st.session_state.show_add_dialog = False
-            st.rerun()
-        
-        if submit:
-            # Validation
-            if not source_name or not data_source_reference:
-                st.error("Please fill in all required fields!")
-            else:
-                # Validate emission factor
-                is_valid, msg = validate_emission_factor(emission_factor, unit)
-                if not is_valid:
-                    st.error(f"❌ {msg}")
-                else:
-                    # Create source
-                    category_id = category_options[selected_category]
-                    result = create_custom_source(
-                        category_id=category_id,
-                        source_name=source_name,
-                        emission_factor=emission_factor,
-                        unit=unit,
-                        description=description,
-                        data_source_reference=data_source_reference,
-                        region=region,
-                        company_id=st.session_state.company_id,
-                        user_id=st.session_state.user_id
-                    )
-                    
-                    if result:
-                        st.success(f"✅ Custom source '{source_name}' created successfully!")
-                        st.session_state.show_add_dialog = False
-                        st.rerun()
-                    else:
-                        st.error("❌ Failed to create source. Please try again.")
 
 # ============================================================================
 # EDIT CUSTOM SOURCE DIALOG

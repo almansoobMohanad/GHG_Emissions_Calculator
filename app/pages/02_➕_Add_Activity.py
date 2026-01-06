@@ -138,7 +138,7 @@ if st.session_state.reset_form:
     st.session_state.reset_form = False
     st.rerun()
 
-with st.form("add_emission_form", clear_on_submit=True):
+with st.form("add_activity_form", clear_on_submit=True):
     col1, col2 = st.columns(2)
     
     with col1:

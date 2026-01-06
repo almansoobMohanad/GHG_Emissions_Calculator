@@ -127,9 +127,9 @@ if st.session_state.company_id:
         st.subheader("🎯 Quick Actions")
         
         # Show actions based on permissions
-        if can_user('can_add_emissions'):
+        if can_user('can_add_activity'):
             if st.button("➕ Add New Emission", use_container_width=True, type="primary"):
-                st.switch_page("pages/02_➕_Add_Emissions.py")
+                st.switch_page("pages/02_➕_Add_Activity.py")
         
         if can_user('can_view_data'):
             if st.button("📊 View All Data", use_container_width=True):
@@ -137,7 +137,7 @@ if st.session_state.company_id:
         
         if can_user('can_generate_reports'):
             if st.button("📋 Generate Report", use_container_width=True):
-                st.switch_page("pages/08_📋_SEDG_Report.py")
+                st.switch_page("pages/08_📋_SEDG_Disclosure.py")
         
         if can_user('can_verify_data'):
             if st.button("✅ Verify Data", use_container_width=True):

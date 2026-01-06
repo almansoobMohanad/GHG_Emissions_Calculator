@@ -1,5 +1,5 @@
 """
-SEDG Report - Simplified ESG Disclosure Guide Report Generator
+SEDG Disclousre - Simplified ESG Disclosure Guide Report Generator
 Complete implementation matching official SEDG v2 template with ALL fields
 """
 import streamlit as st
@@ -15,7 +15,7 @@ from core.sedg_pdf import generate_sedg_pdf
 from components.company_verification import enforce_company_verification
 
 # Check permissions
-check_page_permission('08_📋_SEDG_Report.py')
+check_page_permission('08_📋_SEDG_Disclosure.py')
 
 st.set_page_config(page_title="SEDG Report", page_icon="📋", layout="wide")
 
@@ -666,7 +666,7 @@ with col2:
             with st.spinner("Generating PDF..."):
                 pdf_buffer = generate_sedg_pdf(company, sedg_data, ghg_data, disclosure_date)
             
-            filename = f"SEDG_Report_{company['company_name'].replace(' ', '_')}_{reporting_period}.pdf"
+            filename = f"SEDG_Disclosure_{company['company_name'].replace(' ', '_')}_{reporting_period}.pdf"
             
             st.download_button("📥 Download PDF", pdf_buffer, filename, "application/pdf", use_container_width=True)
             st.success("✅ PDF generated!")

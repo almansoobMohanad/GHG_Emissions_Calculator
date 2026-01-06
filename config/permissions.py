@@ -8,30 +8,30 @@ Defines which pages and actions each user role can access.
 PAGE_PERMISSIONS = {
     'admin': [
         '01_🏠_Dashboard.py',
-        '02_➕_Add_Emissions.py',
+        '02_➕_Add_Activity.py',
         '03_📊_View_Data.py',
         '04_✅_Verify_Data.py',
         '05_⚙️_Admin_Panel.py',  # Admin only
         '06_👥_User_Management.py',  # Admin only
         '07_🏢_Company_Management.py',  # Admin only
-        '08_📋_SEDG_Report.py',
+        '08_📋_SEDG_Disclosure.py',
         '09_📝_iESG_Ready.py',
         '10_📤_Document_Requests.py',  # ✅ Added Document Requests
         '11_⚙️_Manage_Emission_Factors.py',
     ],
     'manager': [
         '01_🏠_Dashboard.py',
-        '02_➕_Add_Emissions.py',
+        '02_➕_Add_Activity.py',
         '03_📊_View_Data.py',
         '04_✅_Verify_Data.py',
-        '08_📋_SEDG_Report.py',
+        '08_📋_SEDG_Disclosure.py',
         '09_📝_iESG_Ready.py',
         '10_📤_Document_Requests.py',  # ✅ Manager can request/share documents
         '11_⚙️_Manage_Emission_Factors.py',
     ],
     'normal_user': [
         '01_🏠_Dashboard.py',
-        '02_➕_Add_Emissions.py',
+        '02_➕_Add_Activity.py',
         '03_📊_View_Data.py',
         '09_📝_iESG_Ready.py',
     ]
@@ -39,7 +39,7 @@ PAGE_PERMISSIONS = {
 
 # Feature permissions by role
 FEATURE_PERMISSIONS = {
-    'can_add_emissions': ['admin', 'manager', 'normal_user'],
+    'can_add_activity': ['admin', 'manager', 'normal_user'],
     'can_add_bulk_emissions': ['admin', 'manager'],
     'can_view_data': ['admin', 'manager', 'normal_user'],
     'can_edit_emissions': ['admin', 'manager'],
