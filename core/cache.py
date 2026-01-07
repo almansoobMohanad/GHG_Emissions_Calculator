@@ -75,6 +75,40 @@ def get_company_info(company_id):
         db.disconnect()
 
 @st.cache_data(ttl=300)
+def get_available_years(company_id):
+    """Return list of available years for a company based on actual emissions data.
+    
+    Args:
+        company_id: Company primary key.
+    
+    Returns:
+        list: Sorted list of years with emissions data, plus next year for planning.
+    """
+    db = get_database()
+    if not db.connect():
+        return []
+    
+    try:
+        # Extract year from reporting_period column
+        query = """
+        SELECT DISTINCT YEAR(STR_TO_DATE(reporting_period, '%Y %%')) as year
+        FROM emissions_data
+        WHERE company_id = %s
+        ORDER BY year
+        """
+        rows = db.fetch_query(query, (company_id,))
+        
+        if rows:
+            years = sorted([int(row[0]) for row in rows if row[0]])
+            # Add next year for planning purposes
+            current_year = max(years)
+            return years + [current_year + 1]
+        
+        return []
+    finally:
+        db.disconnect()
+
+@st.cache_data(ttl=300)
 def get_emissions_summary(company_id, reporting_period):
     """Return emissions totals by scope for a company/period.
 
