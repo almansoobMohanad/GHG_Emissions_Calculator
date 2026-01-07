@@ -169,8 +169,8 @@ with st.form("add_activity_form", clear_on_submit=True):
         )
         
         calculation_method = st.text_input(
-            "Calculation Method (optional)",
-            placeholder="e.g., DEFRA 2024, GHG Protocol",
+            "Emission Factor Source (optional)",
+            placeholder="e.g. DEFRA 2024 (UK), IPCC AR6, EPA GHG Factors, MY NIR",
             help="What methodology was used?"
         )
     
