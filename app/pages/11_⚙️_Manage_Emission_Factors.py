@@ -254,6 +254,8 @@ if len(filtered_sources) > 0:
         if st.button("✅ Activate All", use_container_width=True, key="bulk_activate_all"):
             source_ids = [s['id'] for s in filtered_sources]
             if source_ids and bulk_update_sources(source_ids, is_active=True):
+                for source in filtered_sources:
+                    st.session_state[f"active_{source['id']}"] = True
                 clear_all_source_caches()
                 st.success(f"✅ Activated {len(source_ids)} sources!")
                 st.rerun()
@@ -261,6 +263,8 @@ if len(filtered_sources) > 0:
         if st.button("❌ Deactivate All", use_container_width=True, key="bulk_deactivate_all"):
             source_ids = [s['id'] for s in filtered_sources]
             if source_ids and bulk_update_sources(source_ids, is_active=False):
+                for source in filtered_sources:
+                    st.session_state[f"active_{source['id']}"] = False
                 clear_all_source_caches()
                 st.success(f"✅ Deactivated {len(source_ids)} sources!")
                 st.rerun()
@@ -288,16 +292,20 @@ if len(filtered_sources) > 0:
                 with col1:
                     st.markdown(f"**Bulk Actions (Scope {scope_num}):**")
                 with col2:
-                    if st.button("✅ Activate", use_container_width=True, key=f"bulk_activate_scope_{scope_num}"):
+                    if st.button("Activate", use_container_width=True, key=f"bulk_activate_scope_{scope_num}"):
                         scope_source_ids = [s['id'] for s in scope_sources]
                         if scope_source_ids and bulk_update_sources(scope_source_ids, is_active=True):
+                            for source in scope_sources:
+                                st.session_state[f"active_{source['id']}"] = True
                             clear_all_source_caches()
                             st.success(f"✅ Activated {len(scope_source_ids)} sources in {scope_name}!")
                             st.rerun()
                 with col3:
-                    if st.button("❌ Deactivate", use_container_width=True, key=f"bulk_deactivate_scope_{scope_num}"):
+                    if st.button("Deactivate", use_container_width=True, key=f"bulk_deactivate_scope_{scope_num}"):
                         scope_source_ids = [s['id'] for s in scope_sources]
                         if scope_source_ids and bulk_update_sources(scope_source_ids, is_active=False):
+                            for source in scope_sources:
+                                st.session_state[f"active_{source['id']}"] = False
                             clear_all_source_caches()
                             st.success(f"✅ Deactivated {len(scope_source_ids)} sources in {scope_name}!")
                             st.rerun()
