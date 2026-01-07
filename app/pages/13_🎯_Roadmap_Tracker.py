@@ -1,6 +1,6 @@
 """
-Emissions Reduction Tracker - WITH CACHING
-Save as: pages/13_🎯_Reduction_Tracker.py
+Roadmap Tracker - Strategic planning for emissions reduction initiatives - WITH CACHING
+Save as: pages/13_🎯_Roadmap_Tracker.py
 
 This version uses cached functions for better performance
 """
@@ -83,8 +83,8 @@ with navigation_cols[4]:
 
 page_section = st.session_state.page_section
 
-st.title("🎯 Emissions Reduction Tracker")
-st.markdown("Track your climate action goals, initiatives, and progress over time")
+st.title("🎯 Roadmap Tracker")
+st.markdown("Plan and track your strategic initiatives and climate action roadmap")
 st.divider()
 
 # Enforce company verification
