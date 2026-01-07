@@ -18,7 +18,7 @@ if not st.session_state.get('authenticated', False):
     st.warning("⚠️ Please login to access this page")
     st.stop()
 
-st.set_page_config(page_title="Add Emission", page_icon="➕", layout="wide")
+st.set_page_config(page_title="Add Activity", page_icon="➕", layout="wide")
 
 # Sidebar
 with st.sidebar:
@@ -29,7 +29,7 @@ with st.sidebar:
         st.switch_page("main.py")
 
 
-st.title("➕ Add Emission Entry")
+st.title("➕ Add Activity Entry")
 st.markdown("Record a new greenhouse gas emission for your company")
 st.divider()
 
@@ -131,7 +131,6 @@ if selected_source.get('region'):
 # ============================================================================
 # STEP 4: Enter Activity Data and Save
 # ============================================================================
-st.subheader("📝 Step 4: Enter Emission Data")
 
 # Reset form values if flag is set
 if st.session_state.reset_form:
