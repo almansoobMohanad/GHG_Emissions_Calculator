@@ -304,7 +304,7 @@ if len(filtered_sources) > 0:
                                 "Show in Dropdown",
                                 value=source['is_active'],
                                 key=active_key,
-                                help="When checked, this source appears in Add Emissions"
+                                help="When checked, this source appears in Add Activity"
                             )
                             if new_active != source['is_active']:
                                 if toggle_source_active(source['id'], new_active):
