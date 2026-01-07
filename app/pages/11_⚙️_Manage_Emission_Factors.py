@@ -297,20 +297,17 @@ if len(filtered_sources) > 0:
                         """)
                     
                     with col2:
-                        # Active toggle
+                        # Active toggle - both system and custom sources can be toggled
                         active_key = f"active_{source['id']}"
-                        if source['source_type'] == 'system':
-                            new_active = st.checkbox(
-                                "Show in Dropdown",
-                                value=source['is_active'],
-                                key=active_key,
-                                help="When checked, this source appears in Add Activity"
-                            )
-                            if new_active != source['is_active']:
-                                if toggle_source_active(source['id'], new_active):
-                                    st.rerun()
-                        else:
-                            st.checkbox("Show in Dropdown", value=True, disabled=True, key=active_key)
+                        new_active = st.checkbox(
+                            "Show in Dropdown",
+                            value=source['is_active'],
+                            key=active_key,
+                            help="When checked, this source appears in Add Activity"
+                        )
+                        if new_active != source['is_active']:
+                            if toggle_source_active(source['id'], new_active):
+                                st.rerun()
                     
                     with col3:
                         # Actions
