@@ -13,7 +13,8 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from core.cache import (
     get_emissions_summary,
     get_company_info,
-    get_company_emissions_for_analytics
+    get_company_emissions_for_analytics,
+    get_available_years
 )
 from core.permissions import check_page_permission, show_permission_badge, can_user
 from config.permissions import get_role_display_name
@@ -66,23 +67,25 @@ if status == 'no_company':
 # YEAR SELECTOR
 # ============================================================================
 if st.session_state.company_id:
-    # Get current year as default
-    current_year = datetime.now().year
+    # Get available years from database
+    available_years = get_available_years(st.session_state.company_id)
     
-    # Generate year options (e.g., from 2020 to current year + 1)
-    year_options = list(range(2020, current_year + 2))
+    # If no data exists yet, provide a default range
+    if not available_years:
+        current_year = datetime.now().year
+        available_years = [current_year]
     
     # Initialize session state for selected year if not exists
     if 'selected_year' not in st.session_state:
-        st.session_state.selected_year = current_year
+        st.session_state.selected_year = available_years[-1] if available_years else datetime.now().year
     
     # Year selector at the top
     col_year, col_spacer = st.columns([1, 3])
     with col_year:
         selected_year = st.selectbox(
             "📅 Select Year",
-            options=year_options,
-            index=year_options.index(st.session_state.selected_year) if st.session_state.selected_year in year_options else year_options.index(current_year),
+            options=available_years,
+            index=available_years.index(st.session_state.selected_year) if st.session_state.selected_year in available_years else len(available_years) - 1,
             help="View emissions data for a specific year",
             key="year_selector"
         )
