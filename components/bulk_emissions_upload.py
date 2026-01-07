@@ -7,7 +7,6 @@ Only accessible to admins and managers via permission checks.
 import streamlit as st
 import pandas as pd
 from core.cache import get_database, clear_emissions_cache
-from config.constants import REPORTING_PERIODS
 from config.permissions import has_permission
 
 
@@ -200,9 +199,21 @@ def _process_bulk_upload(df: pd.DataFrame, sources: list, auto_verify: bool = Fa
             failures.append((idx + 2, f"Unknown source_code: {src_code}"))
             continue
         
-        # Validate reporting period
-        if rpt not in REPORTING_PERIODS:
-            failures.append((idx + 2, f"Invalid reporting_period: {rpt}. Valid options: {', '.join(REPORTING_PERIODS)}"))
+        # Validate reporting period - allow any reasonable year format
+        if not rpt:
+            failures.append((idx + 2, "Reporting period cannot be empty"))
+            continue
+        
+        # Try to extract a year from the reporting period to validate it's reasonable
+        try:
+            # Check if it's a 4-digit year
+            year_str = rpt.split()[0] if ' ' in rpt else rpt
+            year = int(year_str)
+            if year < 1900 or year > 2100:
+                failures.append((idx + 2, f"Invalid reporting_period year: {rpt}. Year must be between 1900-2100"))
+                continue
+        except (ValueError, IndexError):
+            failures.append((idx + 2, f"Invalid reporting_period format: {rpt}. Should start with a valid year (e.g., '2024', '2024 Q1')"))
             continue
         
         # Validate activity is positive
