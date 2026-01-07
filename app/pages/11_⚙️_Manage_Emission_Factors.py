@@ -246,23 +246,24 @@ filtered_sources = filter_sources(sources)
 if len(filtered_sources) > 0:
     st.subheader(f"📋 Sources ({len(filtered_sources)} found)")
     
-    # Bulk action controls
-    with st.expander("⚡ Bulk Actions", expanded=False):
-        st.markdown("Select actions to apply to **all filtered sources** shown below:")
-        
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            if st.button("✅ Activate All", use_container_width=True):
-                source_ids = [s['id'] for s in filtered_sources if s['source_type'] == 'system']
-                if source_ids and bulk_update_sources(source_ids, is_active=True):
-                    st.success(f"✅ Activated {len(source_ids)} sources!")
-                    st.rerun()
-        with col2:
-            if st.button("❌ Deactivate All", use_container_width=True):
-                source_ids = [s['id'] for s in filtered_sources if s['source_type'] == 'system']
-                if source_ids and bulk_update_sources(source_ids, is_active=False):
-                    st.success(f"✅ Deactivated {len(source_ids)} sources!")
-                    st.rerun()
+    # Bulk action controls - global
+    col1, col2, col3 = st.columns([2, 1, 1])
+    with col1:
+        st.markdown("**Bulk Actions (All Filtered Sources):**")
+    with col2:
+        if st.button("✅ Activate All", use_container_width=True, key="bulk_activate_all"):
+            source_ids = [s['id'] for s in filtered_sources]
+            if source_ids and bulk_update_sources(source_ids, is_active=True):
+                clear_all_source_caches()
+                st.success(f"✅ Activated {len(source_ids)} sources!")
+                st.rerun()
+    with col3:
+        if st.button("❌ Deactivate All", use_container_width=True, key="bulk_deactivate_all"):
+            source_ids = [s['id'] for s in filtered_sources]
+            if source_ids and bulk_update_sources(source_ids, is_active=False):
+                clear_all_source_caches()
+                st.success(f"✅ Deactivated {len(source_ids)} sources!")
+                st.rerun()
     
     st.divider()
     
@@ -281,6 +282,26 @@ if len(filtered_sources) > 0:
         for tab_idx, (tab_name, scope_num, scope_name, scope_sources) in enumerate(scope_tabs):
             with tab_list[tab_idx]:
                 st.markdown(f"### {scope_name} ({len(scope_sources)} sources)")
+                
+                # Scope-specific bulk actions
+                col1, col2, col3 = st.columns([2, 1, 1])
+                with col1:
+                    st.markdown(f"**Bulk Actions (Scope {scope_num}):**")
+                with col2:
+                    if st.button("✅ Activate", use_container_width=True, key=f"bulk_activate_scope_{scope_num}"):
+                        scope_source_ids = [s['id'] for s in scope_sources]
+                        if scope_source_ids and bulk_update_sources(scope_source_ids, is_active=True):
+                            clear_all_source_caches()
+                            st.success(f"✅ Activated {len(scope_source_ids)} sources in {scope_name}!")
+                            st.rerun()
+                with col3:
+                    if st.button("❌ Deactivate", use_container_width=True, key=f"bulk_deactivate_scope_{scope_num}"):
+                        scope_source_ids = [s['id'] for s in scope_sources]
+                        if scope_source_ids and bulk_update_sources(scope_source_ids, is_active=False):
+                            clear_all_source_caches()
+                            st.success(f"✅ Deactivated {len(scope_source_ids)} sources in {scope_name}!")
+                            st.rerun()
+                
                 st.divider()
                 
                 for source in scope_sources:
@@ -307,6 +328,7 @@ if len(filtered_sources) > 0:
                         )
                         if new_active != source['is_active']:
                             if toggle_source_active(source['id'], new_active):
+                                clear_all_source_caches()
                                 st.rerun()
                     
                     with col3:
