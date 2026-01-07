@@ -12,7 +12,7 @@ VERIFICATION_STATUS = {
     'REJECTED': 'rejected'
 }
 
-# Reporting periods
-REPORTING_PERIODS = [
-    "2024", "2023", "2022",
-]
+# Reporting periods - dynamically generated
+from utils.date_utils import get_reporting_periods
+
+REPORTING_PERIODS = get_reporting_periods()

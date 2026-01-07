@@ -141,9 +141,14 @@ with st.form("add_activity_form", clear_on_submit=True):
     col1, col2 = st.columns(2)
     
     with col1:
+        from datetime import datetime
+        current_year = str(datetime.now().year)
+        default_index = REPORTING_PERIODS.index(current_year) if current_year in REPORTING_PERIODS else 0
+        
         reporting_period = st.selectbox(
             "Reporting Period *",
             REPORTING_PERIODS,
+            index=default_index,
             help="The time period this emission data represents"
         )
         
