@@ -234,10 +234,6 @@ def toggle_source_active(source_id, is_active):
     query = "UPDATE ghg_emission_sources SET is_active = %s WHERE id = %s"
     result = db.execute_query(query, (is_active, source_id))
     
-    if result:
-        # Clear ALL relevant caches
-        clear_all_source_caches()
-    
     return result
 
 def toggle_source_visible(source_id, is_visible):
@@ -253,10 +249,6 @@ def toggle_source_visible(source_id, is_visible):
     db = get_database()
     query = "UPDATE ghg_emission_sources SET is_visible_in_ui = %s WHERE id = %s"
     result = db.execute_query(query, (is_visible, source_id))
-    
-    if result:
-        # Clear ALL relevant caches
-        clear_all_source_caches()
     
     return result
 
@@ -293,10 +285,6 @@ def bulk_update_sources(source_ids, is_active=None, is_visible=None):
     """
     
     result = db.execute_query(query, tuple(source_ids))
-    
-    if result:
-        # Clear ALL relevant caches
-        clear_all_source_caches()
     
     return result
 
@@ -345,9 +333,6 @@ def create_custom_source(category_id, source_name, emission_factor, unit,
     if result:
         # Log creation
         log_source_history(result, emission_factor, user_id, "Created custom source")
-        
-        # Clear ALL relevant caches
-        clear_all_source_caches()
     
     return result
 
@@ -396,9 +381,6 @@ def update_custom_source(source_id, source_name, emission_factor, unit,
         if old_factor != emission_factor:
             # Log history only if factor changed
             log_source_history(source_id, emission_factor, user_id, change_reason or "Updated emission factor")
-        
-        # Clear ALL relevant caches
-        clear_all_source_caches()
     
     return result
 
@@ -430,8 +412,6 @@ def delete_custom_source(source_id):
     result = db.execute_query("DELETE FROM ghg_emission_sources WHERE id = %s", (source_id,))
     
     if result:
-        # Clear ALL relevant caches
-        clear_all_source_caches()
         return True, "Source deleted successfully"
     
     return False, "Failed to delete source"
