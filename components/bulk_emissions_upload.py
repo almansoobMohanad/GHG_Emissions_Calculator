@@ -30,6 +30,7 @@ def render_bulk_upload_section(sources):
         return
     
     st.markdown("---")
+    st.info("🔐 **Managers & Admins Only** - Bulk upload emissions from CSV/Excel files")
     st.markdown("### 📥 Bulk Upload Emissions (CSV / Excel)")
     
     # Show available sources as reference
