@@ -83,6 +83,7 @@ def get_all_sources_for_management(company_id):
         es.data_source_reference,
         es.version,
         es.region,
+        es.reference_year,
         s.scope_number,
         s.scope_name,
         c.category_code,
@@ -111,10 +112,11 @@ def get_all_sources_for_management(company_id):
         'data_source_reference': r[10],
         'version': r[11],
         'region': r[12],
-        'scope_number': r[13],
-        'scope_name': r[14],
-        'category_code': r[15],
-        'category_name': r[16]
+        'reference_year': r[13],
+        'scope_number': r[14],
+        'scope_name': r[15],
+        'category_code': r[16],
+        'category_name': r[17]
     } for r in rows]
 
 @st.cache_data(ttl=600)
@@ -289,7 +291,8 @@ def bulk_update_sources(source_ids, is_active=None, is_visible=None):
     return result
 
 def create_custom_source(category_id, source_name, emission_factor, unit, 
-                        description, data_source_reference, region, company_id, user_id):
+                        description, data_source_reference, region, 
+                        reference_year, company_id, user_id):
     """Create a new custom emission source
     
     Args:
@@ -300,6 +303,7 @@ def create_custom_source(category_id, source_name, emission_factor, unit,
         description: Description
         data_source_reference: Where the factor came from
         region: Region (e.g., Malaysia, UK)
+        reference_year: Year of the emission factor reference/publication
         company_id: Company ID
         user_id: User creating the source
     
@@ -319,14 +323,15 @@ def create_custom_source(category_id, source_name, emission_factor, unit,
     query = """
     INSERT INTO ghg_emission_sources 
     (category_id, source_code, source_name, emission_factor, unit, description, 
-     data_source_reference, region, source_type, company_id, is_active, is_visible_in_ui, version)
-    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 'custom', %s, TRUE, TRUE, 1)
+     data_source_reference, region, reference_year, source_type, company_id, 
+     is_active, is_visible_in_ui, version)
+    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, 'custom', %s, TRUE, TRUE, 1)
     """
     
     result = db.execute_query(
         query,
         (category_id, source_code, source_name, emission_factor, unit, 
-         description, data_source_reference, region, company_id),
+         description, data_source_reference, region, reference_year, company_id),
         return_id=True
     )
     
@@ -337,7 +342,8 @@ def create_custom_source(category_id, source_name, emission_factor, unit,
     return result
 
 def update_custom_source(source_id, source_name, emission_factor, unit, 
-                        description, data_source_reference, region, user_id, change_reason):
+                        description, data_source_reference, region, 
+                        reference_year, user_id, change_reason):
     """Update a custom emission source
     
     Args:
@@ -348,6 +354,7 @@ def update_custom_source(source_id, source_name, emission_factor, unit,
         description: New description
         data_source_reference: New reference
         region: New region
+        reference_year: Year of the emission factor reference/publication
         user_id: User making the change
         change_reason: Reason for the change
     
@@ -368,13 +375,15 @@ def update_custom_source(source_id, source_name, emission_factor, unit,
         description = %s,
         data_source_reference = %s,
         region = %s,
+        reference_year = %s,
         version = version + 1
     WHERE id = %s AND source_type = 'custom'
     """
     
     result = db.execute_query(
         query,
-        (source_name, emission_factor, unit, description, data_source_reference, region, source_id)
+        (source_name, emission_factor, unit, description, data_source_reference, 
+         region, reference_year, source_id)
     )
     
     if result:
