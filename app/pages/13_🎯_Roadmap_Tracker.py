@@ -313,7 +313,7 @@ elif page_section == "🎯 Reduction Goals":
                             SET status = 'inactive'
                             WHERE company_id = %s AND status = 'active'
                         """
-                        db.execute_update(deactivate_query, (company_id,))
+                        db.execute_query(deactivate_query, (company_id,))
                         
                         # Insert new goal
                         insert_query = """
@@ -323,7 +323,7 @@ elif page_section == "🎯 Reduction Goals":
                                 framework, description, status, created_by
                             ) VALUES (%s, %s, %s, %s, %s, %s, %s, 'active', %s)
                         """
-                        success = db.execute_update(insert_query, (
+                        success = db.execute_query(insert_query, (
                             company_id, baseline_year, baseline_emissions,
                             target_year, target_reduction, goal_framework,
                             goal_description, st.session_state.user_id
@@ -458,7 +458,7 @@ elif page_section == "💡 Action Plans":
                                     responsible_person, created_by
                                 ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                             """
-                            success = db.execute_update(insert_query, (
+                            success = db.execute_query(insert_query, (
                                 company_id, initiative_name, description,
                                 ','.join(target_scope) if target_scope else None,
                                 expected_reduction, estimated_cost if estimated_cost > 0 else None,
@@ -531,7 +531,7 @@ elif page_section == "💡 Action Plans":
                             db = get_database()
                             try:
                                 delete_query = "DELETE FROM reduction_initiatives WHERE id = %s"
-                                if db.execute_update(delete_query, (init['id'],)):
+                                if db.execute_query(delete_query, (init['id'],)):
                                     # Clear cache after deletion
                                     clear_reduction_initiatives_cache()
                                     st.success("Initiative deleted")
