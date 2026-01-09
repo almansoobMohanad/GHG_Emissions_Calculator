@@ -241,9 +241,10 @@ def calculate_reduction_progress(company_id: int) -> Dict[str, Any]:
     current_year = datetime.now().year
     current_emissions = get_current_year_emissions(company_id, current_year)
     
-    # Calculate metrics
-    baseline_emissions = goal['baseline_emissions']
-    target_reduction_pct = goal['target_reduction_percentage']
+    # Calculate metrics - convert all to float to avoid Decimal/float mismatch
+    baseline_emissions = float(goal['baseline_emissions'])
+    target_reduction_pct = float(goal['target_reduction_percentage'])
+    current_emissions = float(current_emissions)
     target_emissions = baseline_emissions * (1 - target_reduction_pct / 100)
     
     reduction_achieved = baseline_emissions - current_emissions
