@@ -1,5 +1,5 @@
 """
-i-ESG Ready Questionnaire - ESG Readiness Self Assessment
+ESG Ready Questionnaire - ESG Readiness Self Assessment
 Complete implementation with all official MITI questions
 """
 import streamlit as st
@@ -17,7 +17,7 @@ from components.company_verification import enforce_company_verification
 # Check permissions
 check_page_permission('09_📝_ESG_Ready_Questionnaire.py')
 
-st.set_page_config(page_title="i-ESG Ready", page_icon="📝", layout="wide")
+st.set_page_config(page_title="ESG Ready", page_icon="📝", layout="wide")
 
 # Enforce company verification
 status = enforce_company_verification(st.session_state.get('company_id'))
@@ -34,7 +34,7 @@ with st.sidebar:
             del st.session_state[key]
         st.switch_page("main.py")
 
-st.title("📝 i-ESG Ready Questionnaire")
+st.title("📝 ESG Ready Questionnaire")
 st.markdown("**ESG Readiness Self-Assessment Programme**")
 st.info("ℹ️ Complete this assessment locally. Your data stays private and you can download a PDF of your responses.")
 st.divider()
@@ -210,13 +210,13 @@ with tab1:
     col1, col2 = st.columns(2)
     with col1:
         st.text_input(
-            "Company Name *",
+            "Company Name (auto-filled)",
             key='iesg_company_name',
             placeholder="Enter company name",
             disabled=True
         )
         st.text_input(
-            "Email Address *",
+            "Email Address (auto-filled)",
             key='iesg_email',
             placeholder="company@example.com",
             disabled=True
@@ -225,7 +225,8 @@ with tab1:
         st.text_input(
             "Phone Number *",
             key='iesg_phone',
-            placeholder="+60 12-345 6789"
+            placeholder="+60 12-345 6789",
+            help="add the phone number you would like to show on the generated pdf"
         )
     
     st.divider()
@@ -1067,7 +1068,7 @@ with col2:
 st.divider()
 st.markdown("""
 <div style='text-align: center; color: #666; font-size: 0.9em;'>
-    <p>i-ESG Ready Questionnaire | Ministry of Investment, Trade and Industry (MITI)</p>
+    <p>ESG Ready Questionnaire | Ministry of Investment, Trade and Industry (MITI)</p>
     <p>Your data is stored locally and never sent to external servers.</p>
 </div>
 """, unsafe_allow_html=True)

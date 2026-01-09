@@ -4,7 +4,7 @@ from typing import Mapping, Any, List
 
 
 def generate_iesg_pdf(state: Mapping[str, Any]) -> BytesIO:
-    """Generate a professional i-ESG Ready Questionnaire PDF.
+    """Generate a professional ESG Ready Questionnaire PDF.
 
     Expects keys prefixed with 'iesg_' as used in the Streamlit session_state.
     Returns a BytesIO positioned at start, ready to be served as a file.
@@ -148,7 +148,7 @@ def generate_iesg_pdf(state: Mapping[str, Any]) -> BytesIO:
 
     # Cover page
     content.append(Spacer(1, 1.5*inch))
-    content.append(Paragraph("i-ESG Ready Questionnaire", title_style))
+    content.append(Paragraph("ESG Ready Questionnaire", title_style))
     content.append(Paragraph("ESG Readiness Self-Assessment Report", subtitle_style))
     content.append(Spacer(1, 0.5*inch))
 
@@ -280,7 +280,7 @@ def generate_iesg_pdf(state: Mapping[str, Any]) -> BytesIO:
     # Footer
     content.append(Spacer(1, 0.5*inch))
     footer_table = Table(
-        [[Paragraph("End of i-ESG Ready Questionnaire Report", meta_style)]],
+        [[Paragraph("End of ESG Ready Questionnaire Report", meta_style)]],
         colWidths=[6.5*inch]
     )
     footer_table.setStyle(TableStyle([
