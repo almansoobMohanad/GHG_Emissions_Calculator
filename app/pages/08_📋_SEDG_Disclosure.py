@@ -412,7 +412,7 @@ with tab1:
     with col2:
         st.number_input("Recycling (tonnes)", min_value=0.0, key='sedg_e43_haz_recycle')
     with col3:
-        st.number_input("Other recovery (tonnes)", min_value=0.0, key='sedg_e43_haz_recovery')
+        st.number_input("Other recovery options (tonnes)", min_value=0.0, key='sedg_e43_haz_recovery')
     
     st.markdown("**Non-hazardous - Diverted from Disposal**")
     col1, col2, col3 = st.columns(3)
@@ -421,7 +421,7 @@ with tab1:
     with col2:
         st.number_input("Recycle (tonnes)", min_value=0.0, key='sedg_e43_nonhaz_recycle')
     with col3:
-        st.number_input("Other recovery ops (tonnes)", min_value=0.0, key='sedg_e43_nonhaz_recovery')
+        st.number_input("Other recovery options (tonnes)", min_value=0.0, key='sedg_e43_nonhaz_recovery')
     
     st.divider()
     
@@ -431,9 +431,9 @@ with tab1:
     st.markdown("**Hazardous - Directed to Disposal**")
     col1, col2, col3, col4 = st.columns(4)
     with col1:
-        st.number_input("Incin w/ recovery", min_value=0.0, key='sedg_e44_haz_incin_recovery')
+        st.number_input("Incineration w/ recovery", min_value=0.0, key='sedg_e44_haz_incin_recovery')
     with col2:
-        st.number_input("Incin w/o recovery", min_value=0.0, key='sedg_e44_haz_incin_no_recovery')
+        st.number_input("Incineration w/o recovery", min_value=0.0, key='sedg_e44_haz_incin_no_recovery')
     with col3:
         st.number_input("Landfilling", min_value=0.0, key='sedg_e44_haz_landfill')
     with col4:
@@ -442,20 +442,21 @@ with tab1:
     st.markdown("**Non-hazardous - Directed to Disposal**")
     col1, col2, col3, col4 = st.columns(4)
     with col1:
-        st.number_input("Incin w/ recov", min_value=0.0, key='sedg_e44_nonhaz_incin_recovery')
+        st.number_input("Incineration w/ recovery", min_value=0.0, key='sedg_e44_nonhaz_incin_recovery')
     with col2:
-        st.number_input("Incin w/o recov", min_value=0.0, key='sedg_e44_nonhaz_incin_no_recovery')
+        st.number_input("Incineration w/o recovery", min_value=0.0, key='sedg_e44_nonhaz_incin_no_recovery')
     with col3:
-        st.number_input("Landfill", min_value=0.0, key='sedg_e44_nonhaz_landfill')
+        st.number_input("Landfilling", min_value=0.0, key='sedg_e44_nonhaz_landfill')
     with col4:
-        st.number_input("Other disp", min_value=0.0, key='sedg_e44_nonhaz_other')
+        st.number_input("Other disposal", min_value=0.0, key='sedg_e44_nonhaz_other')
     
     st.divider()
     
     # E5.1 - Materials
     st.markdown("### SEDG-E5.1: Key Materials (Basic)")
     st.text_area("List of materials for primary products and services", key='sedg_e51_materials', height=80,
-                placeholder="e.g., Steel, Plastic, Paper...")
+                placeholder="e.g., Steel, Plastic, Paper...",
+                help="Include total weights in metric tonnes, if applicable")
     
     st.divider()
     
@@ -485,10 +486,10 @@ with tab2:
     st.markdown("### SEDG-S1.2: Risk of Child Labour and Forced Labour (Intermediate)")
     col1, col2 = st.columns(2)
     with col1:
-        st.text_area("Operations/suppliers with child labour risk", key='sedg_s12_child_risk_ops', 
+        st.text_area("List of operations and suppliers with significant risk of child labour", key='sedg_s12_child_risk_ops', 
                     placeholder="List operations and suppliers...", height=100)
     with col2:
-        st.text_area("Operations/suppliers with forced labour risk", key='sedg_s12_forced_risk_ops',
+        st.text_area("List of operations and suppliers with significant risk of forced labour", key='sedg_s12_forced_risk_ops',
                     placeholder="List operations and suppliers...", height=100)
     
     st.divider()
@@ -510,8 +511,8 @@ with tab2:
     st.divider()
     
     # S2.3 - Minimum Wage
-    st.markdown("### SEDG-S2.3: Employees Meeting Minimum Wage (Basic)")
-    st.number_input("% meeting minimum wage", min_value=0.0, max_value=100.0, key='sedg_s23_min_wage_pct')
+    st.markdown("### SEDG-S2.3: Percentage of Employees Meeting or Above Applicable Minimum Wage Laws (Basic)")
+    st.number_input("% meeting or above applicable minimum wage laws, if any", min_value=0.0, max_value=100.0, key='sedg_s23_min_wage_pct')
     
     st.divider()
     
@@ -580,15 +581,16 @@ with tab3:
     
     # G1.2 - Governance Structure
     st.markdown("### SEDG-G1.2: Governance Structure (Intermediate)")
-    st.text_area("Company governance structure", key='sedg_g12_structure', height=120,
-                placeholder="Describe board structure, committees, reporting lines...")
+    st.text_area("List the governance structure of the board, including committees of the board and management, if applicable", key='sedg_g12_structure', height=120,
+                placeholder="e.g., Board of Directors, Audit Committee, Risk Committee, Executive Management...")
     
     st.divider()
     
     # G2.1 - Policies
     st.markdown("### SEDG-G2.1: Company Policies (Basic)")
-    st.text_area("List of company policies", key='sedg_g21_policies', height=120,
-                placeholder="List policies (one per line)...")
+    st.text_area("List the company's policies (including but not limited to: Code of Conduct, Anti-Corruption Policy, Whistleblowing Policy, Health and Safety Policy)", 
+                key='sedg_g21_policies', height=120,
+                placeholder="e.g., Code of Conduct, Anti-Corruption Policy, Whistleblowing Policy, Health and Safety Policy...")
     
     st.divider()
     
@@ -601,15 +603,17 @@ with tab3:
     
     # G3.2 - Operations Risks
     st.markdown("### SEDG-G3.2: Operations & Activities Risks (Intermediate)")
-    st.text_area("List of company's operations and activities risks", key='sedg_g32_ops_risks', height=120,
-                placeholder="List risks (one per line)...")
+    st.text_area("List the risks of company operations and activities (including but not limited to: Regulatory compliance risk, Business continuity risk)", 
+                key='sedg_g32_ops_risks', height=120,
+                placeholder="e.g., Regulatory compliance risk, Business continuity risk...")
     
     st.divider()
     
     # G3.3 - Sustainability Risks
     st.markdown("### SEDG-G3.3: Sustainability Risks (Advanced)")
-    st.text_area("List of company's sustainability risks", key='sedg_g33_sustain_risks', height=120,
-                placeholder="List risks (one per line)...")
+    st.text_area("List the sustainability risks of company, if applicable (including but not limited to: Climate-related physical risk, Climate-related transition risk)", 
+                key='sedg_g33_sustain_risks', height=120,
+                placeholder="e.g., Climate-related physical risk, Climate-related transition risk...")
     
     st.divider()
     
@@ -628,9 +632,9 @@ with tab3:
     st.markdown("### SEDG-G4.2: Anti-Corruption Training (Intermediate)")
     col1, col2 = st.columns(2)
     with col1:
-        st.number_input("Employees trained in anti-corruption (number)", min_value=0, key='sedg_g42_anticorrupt_num')
+        st.number_input("Employees trained in anti-bribery and anti-corruption", min_value=0, key='sedg_g42_anticorrupt_num')
     with col2:
-        st.number_input("Employees trained in anti-corruption (%)", min_value=0.0, max_value=100.0, 
+        st.number_input("Employees trained in anti-bribery and anti-corruption (%)", min_value=0.0, max_value=100.0, 
                        key='sedg_g42_anticorrupt_pct')
     
     st.divider()
@@ -646,9 +650,11 @@ with tab3:
     st.markdown("### SEDG-G5.1: Customer Data Privacy (Intermediate)")
     col1, col2 = st.columns(2)
     with col1:
-        st.number_input("Customer data privacy complaints", min_value=0, key='sedg_g51_privacy_complaints')
+        st.number_input("Substantiated complaints on customer privacy breaches and data loss, if any", 
+                       min_value=0, key='sedg_g51_privacy_complaints')
     with col2:
-        st.text_area("Nature of privacy complaints", key='sedg_g51_privacy_nature',
+        st.text_area("Nature of substantiated privacy and data loss complaints, if any", 
+                    key='sedg_g51_privacy_nature',
                     placeholder="Describe or enter 'None'", height=80)
 
 # DOWNLOAD
