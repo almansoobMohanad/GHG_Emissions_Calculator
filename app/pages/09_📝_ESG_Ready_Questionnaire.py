@@ -15,7 +15,7 @@ from core.cache import get_company_info
 from components.company_verification import enforce_company_verification
 
 # Check permissions
-check_page_permission('09_📝_iESG_Ready.py')
+check_page_permission('09_📝_ESG_Ready_Questionnaire.py')
 
 st.set_page_config(page_title="i-ESG Ready", page_icon="📝", layout="wide")
 
@@ -206,7 +206,7 @@ with tab1:
     st.header("📋 Section A: About The Company")
     
     # Q1: Company Information
-    st.subheader("1. Company Information")
+    st.subheader("1. Company Details")
     col1, col2 = st.columns(2)
     with col1:
         st.text_input(
@@ -231,7 +231,7 @@ with tab1:
     st.divider()
     
     # Q2: Company Location
-    st.subheader("2. Company Location *")
+    st.subheader("2. Where is your company located? *")
     locations = [
         "W.P Kuala Lumpur", "Selangor", "Negeri Sembilan", "Johor",
         "Penang", "Melaka", "Kedah", "Perak", "Perlis", "Pahang",
@@ -242,7 +242,7 @@ with tab1:
     st.divider()
     
     # Q3: Company Sub-sector
-    st.subheader("3. Please specify company sub-sector *")
+    st.subheader("3. What is your company's sub-sector? *")
     subsectors = [
         "E&E",
         "Chemical & Petrochemical products",
@@ -266,7 +266,7 @@ with tab1:
     st.divider()
     
     # Q4: Company Size
-    st.subheader("4. Please specify the size of the company *")
+    st.subheader("4. What is your company's size? *")
     sizes = [
         "Micro (sales: <RM300,000; employees: <5)",
         "Small (sales: RM300,000 ≤ RM15 mil; employees: 5 to < 30)",
@@ -278,7 +278,7 @@ with tab1:
     st.divider()
     
     # Q5: Types of Company
-    st.subheader("5. Please specify types of company *")
+    st.subheader("5. What is your company's market orientation? *")
     types = [
         "Export-oriented (More than 60% of the products are exported)",
         "Domestic-oriented (Less than 60% of the products are exported)"
@@ -288,7 +288,7 @@ with tab1:
     st.divider()
     
     # Q6: Sustainability Reporting Standard
-    st.subheader("6. Please specify organization's sustainability reporting standard *")
+    st.subheader("6. Which sustainability reporting standards does your organization use? *")
     standards = [
         "GRI", "TCFD", "CDP", "Bursa", "SASB", 
         "FTSE4Good", "Business Review Report by SSM",
@@ -308,7 +308,7 @@ with tab1:
     
     # Q7: Reason for None
     if "None of the above" in st.session_state.iesg_reporting_standard:
-        st.subheader('7. If you choose "None" for Q6, please specify the reason')
+        st.subheader("7. If you selected 'None' in Q6, please explain why")
         reasons = [
             "Not sure where to begin",
             "Do not have the skills",
@@ -332,7 +332,7 @@ with tab2:
     st.header("📚 Section B: General Understanding of ESG")
     
     # Q8: Maturity
-    st.subheader("8. How would you qualify the maturity of your organisation's sustainability strategy? *")
+    st.subheader("8. How mature is your organization’s sustainability strategy? *")
     maturity_options = [
         "We have not started our sustainability journey yet",
         "We have started, but we should be doing more",
@@ -344,7 +344,7 @@ with tab2:
     st.divider()
     
     # Q9: Stakeholder Engagements
-    st.subheader("9. Stakeholder engagements *")
+    st.subheader("9. Which stakeholders do you actively engage with? *")
     st.markdown("Organisation constantly engage the following stakeholders to meet their sustainability requirement. (Tick engaged stakeholders only)")
     stakeholders = [
         "Customers",
@@ -360,7 +360,7 @@ with tab2:
     st.divider()
     
     # Q10: Business Case Elements
-    st.subheader("10. Business case elements *")
+    st.subheader("10. Which statement best describes your ESG business case? *")
     business_case = [
         "The Organization does not understand how ESG can present opportunities to enhance revenue, reduce costs, improve risk management, etc",
         "The Organization follows some regulation that are related to ESG practices to comply with local legal requirements (Minimum wage, Act 446 etc)",
@@ -372,7 +372,7 @@ with tab2:
     st.divider()
     
     # Q11: ESG Goals
-    st.subheader("11. ESG Goals *")
+    st.subheader("11. How would you describe your ESG targets and goals? *")
     goals = [
         "The Organization has no targets and goals in relation to ESG commitments",
         "The Organization has some goals and targets relating to ESG but these are not well organized and are not comprehensive",
@@ -384,7 +384,7 @@ with tab2:
     st.divider()
     
     # Q12: ESG Leadership
-    st.subheader("12. ESG Leadership Appointed *")
+    st.subheader("12. Who leads ESG in your organization? *")
     leadership = [
         "There is no clear ESG leader within the Organization",
         "Led by officer who has multiple roles in the Organization such as HR, Admin and Finance",
@@ -396,7 +396,7 @@ with tab2:
     st.divider()
     
     # Q13: ESG Reporting Standards
-    st.subheader("13. ESG Reporting Standards *")
+    st.subheader("13. How do you report on ESG? *")
     reporting = [
         "The Organization doesn't disclose information on its ESG impact and agenda and doesn't have an ESG rating",
         "The Organization provides limited information on ESG in its non-financial reporting, and does not report against a known framework such as GRI or TCFD",
@@ -408,7 +408,7 @@ with tab2:
     st.divider()
     
     # Q14: Data Understanding
-    st.subheader("14. Understanding of Data Required for External Reporting *")
+    st.subheader("14. How well do you understand the data required for external ESG reporting? *")
     data_understanding = [
         "The Organization has not assessed what data is required for any sustainability reporting",
         "The Organization has a limited understanding of the data required for sustainability reporting",
@@ -420,7 +420,7 @@ with tab2:
     st.divider()
     
     # Q15: ESG Elements
-    st.subheader("15. Contains all Required Elements of E, S and G identified by the Organization Stakeholders *")
+    st.subheader("15. Does your ESG program cover the key E, S, and G elements identified by stakeholders? *")
     elements = [
         "There is no ESG program within the Organization",
         "The Organization has a limited plan in place that deals with only some limited aspects of E, S and G",
@@ -432,7 +432,7 @@ with tab2:
     st.divider()
     
     # Q16: Validation
-    st.subheader("16. Validation ESG Data Reported *")
+    st.subheader("16. How are your ESG disclosures validated? *")
     validation = [
         "There is no independent external validation of the ESG information and data reported publicly by the Organization, or no information is reported",
         "The Organization has internal auditor and considering the use of external auditors to validate the information published in the non-financial disclosures",
@@ -448,7 +448,7 @@ with tab3:
     st.header("🌍 Section C: Environment")
     
     # Q17: Carbon Footprint
-    st.subheader("17. Carbon Footprint Reduction Program and Goals *")
+    st.subheader("17. What is your carbon footprint reduction approach and ambition? *")
     carbon = [
         "The Organization has no Carbon Footprint Reduction program due to lack of knowledge on the methodology",
         "The Organization has decided and published modest carbon footprint reduction goals",
@@ -460,7 +460,7 @@ with tab3:
     st.divider()
     
     # Q18: GHG Emissions
-    st.subheader("18. GHG Emissions *")
+    st.subheader("18. How do you manage and reduce GHG emissions? *")
     ghg = [
         "The Organization has no GHG Emissions monitoring in place, with no specific targets, and no goals publicly communicated",
         "The Organization has published GHG emissions and decided on the reduction goals",
@@ -472,7 +472,7 @@ with tab3:
     st.divider()
     
     # Q19: Water Efficiency
-    st.subheader("19. Water Efficiency *")
+    st.subheader("19. How do you manage water efficiency? *")
     water = [
         "The Organization has no water efficiency management",
         "The Organization has decided and published modest water efficiency management",
@@ -484,7 +484,7 @@ with tab3:
     st.divider()
     
     # Q20: Material, Waste and Effluent
-    st.subheader("20. Material, waste and effluent *")
+    st.subheader("20. How do you manage materials, waste, and effluent impacts? *")
     waste = [
         "The Organization has no sustainable material sourcing management",
         "The Organization has decided and published modest sustainable material sourcing management",
@@ -496,7 +496,7 @@ with tab3:
     st.divider()
     
     # Q21: Waste-Water Management
-    st.subheader("21. Waste-Water Management *")
+    st.subheader("21. How do you manage wastewater? *")
     wastewater = [
         "The Organization has no effort to improve the quality of its wastewater and discharged water management",
         "The Organization record and report the amount of water used by the company",
@@ -508,7 +508,7 @@ with tab3:
     st.divider()
     
     # Q22: Energy Consumption
-    st.subheader("22. Energy Consumption *")
+    st.subheader("22. How do you manage and reduce energy consumption? *")
     energy = [
         "The Organization has no efficient practise on energy consumed – electricity, gas or steam water",
         "The Organization has minimum effort to reduce energy consumption such as swicthing off the light during lunch hour",
@@ -520,7 +520,7 @@ with tab3:
     st.divider()
     
     # Q23: Biodiversity
-    st.subheader("23. Biodiversity *")
+    st.subheader("23. How do you address biodiversity impacts? *")
     biodiversity = [
         "The Organization has no effort to preserve and conserve the survival of biodiversity",
         "The Organization has minimal efforts of in ensuring the survival of biodiversity",
@@ -532,7 +532,7 @@ with tab3:
     st.divider()
     
     # Q24: Eco-Friendly Materials
-    st.subheader("24. Use of Eco-Friendly Raw Material *")
+    st.subheader("24. Do you use eco‑friendly raw materials? *")
     eco_materials = [
         "The Organization does not use eco-friendly raw material in business operation",
         "The Organization exploring and planning to use eco-friendly raw materials in business operation (e.g. recycled rubber, biodegradable plastics, compostable straws and others)",
@@ -544,7 +544,7 @@ with tab3:
     st.divider()
     
     # Q25: Reforestation
-    st.subheader("25. Reforestation *")
+    st.subheader("25. Do you conduct or support reforestation activities? *")
     reforestation = [
         "The Organization does not conduct any reforestation program",
         "Organization planning to implement reforestation program",
@@ -560,7 +560,7 @@ with tab4:
     st.header("👥 Section D: Social")
     
     # Q26: Employee Involvement
-    st.subheader("26. Employee Involvement and Support *")
+    st.subheader("26. How involved are employees in your ESG efforts? *")
     employee_involvement = [
         "The Organization does not address ESG matters with its employees and does not solicit feedback or input from its employees",
         "Employees are involved, but mostly in community actions and social matters",
@@ -572,7 +572,7 @@ with tab4:
     st.divider()
     
     # Q27: Domestic Labour Laws
-    st.subheader("27. Domestic Labour Laws and Regulations *")
+    st.subheader("27. How do you comply with domestic labour laws and regulations? *")
     domestic_labour = [
         "The Organisation is unaware with the labour laws and regulations in the country",
         "The Organization strives to comply with all basic labour laws and regulations in the country",
@@ -584,7 +584,7 @@ with tab4:
     st.divider()
     
     # Q28: International Labour Laws
-    st.subheader("28. International Labour Laws and Regulations *")
+    st.subheader("28. How do you align with international labour laws and standards? *")
     intl_labour = [
         "The Organization lack of understanding on the international labour laws and regulations",
         "The organization recognizes the importance of complying with basic international labour laws and regulations, and adhere to fundamental principles",
@@ -596,7 +596,7 @@ with tab4:
     st.divider()
     
     # Q29: Equal Employment
-    st.subheader("29. Equal Employment and Promotion Opportunities *")
+    st.subheader("29. How do you ensure equal employment and promotion opportunities? *")
     equal_employment = [
         "Organization does not set target to achieve equal employment and promotion opportunities",
         "Organization is committed to providing equal employment and promotion opportunities to all employees, and adhere to the basic principles of fairness and non-discrimination",
@@ -608,7 +608,7 @@ with tab4:
     st.divider()
     
     # Q30: Minimum Wage
-    st.subheader("30. Minimum Wage *")
+    st.subheader("30. How do you meet or exceed minimum wage requirements? *")
     min_wage = [
         "Organization pays wages lower than the national minimum wage requirement",
         "Organization ensures that all employees are paid at least the minimum wage mandated by the applicable labour laws and regulations",
@@ -620,7 +620,7 @@ with tab4:
     st.divider()
     
     # Q31: Health & Safety
-    st.subheader("31. Health & Safety *")
+    st.subheader("31. How do you manage occupational health and safety? *")
     health_safety = [
         "Organization does not meet with the basic safety requirement",
         "Organization provide a safe and healthy work environment by identifying and addressing potential hazards, providing basic safety training to employees, and implementing necessary safety measures",
@@ -632,7 +632,7 @@ with tab4:
     st.divider()
     
     # Q32: Grievance Handling
-    st.subheader("32. Formal Grievance Handling Procedure *")
+    st.subheader("32. Do you have a formal grievance handling process? *")
     grievance = [
         "Organization does not practice a formal grievance handling procedures",
         "Organization has established a basic formal grievance handling procedure to address employee concerns and complaints",
@@ -644,7 +644,7 @@ with tab4:
     st.divider()
     
     # Q33: Upskilling
-    st.subheader("33. Upskilling Programmes *")
+    st.subheader("33. How do you upskill and develop your workforce? *")
     upskilling = [
         "Organization does not conduct regular training to upskill workers",
         "Organization recognizes the importance of training and conduct basic skills development programs for workers",
@@ -656,7 +656,7 @@ with tab4:
     st.divider()
     
     # Q34: Community
-    st.subheader("34. Community *")
+    st.subheader("34. How do you contribute to and support the community? *")
     community = [
         "Organization does not provide sponsorships or donations to the community",
         "Organization provides basic sponsorships or donations to local community organizations or events",
@@ -672,7 +672,7 @@ with tab5:
     st.header("⚖️ Section E: Governance")
     
     # Q35: Board Leadership
-    st.subheader("35. Board Leadership *")
+    st.subheader("35. How involved is the Board in ESG leadership? *")
     board_leadership = [
         "The Board is not involved in ESG matters",
         "Leadership is delegated to one board member",
@@ -684,7 +684,7 @@ with tab5:
     st.divider()
     
     # Q36: Board Awareness
-    st.subheader("36. Board and Management Team ESG Awareness *")
+    st.subheader("36. How aware are the Board and management of ESG risks and regulations? *")
     board_awareness = [
         "The Board or management team have a low understanding of the risk management and regulatory environment affecting their business with regard to ESG topics and are not taking a coordinated approach to ensuring regulatory compliance",
         "The Organization has a limited understanding of the risk and regulatory impacts of ESG and is implementing change based on individual directives rather than having a comprehensive approach",
@@ -696,7 +696,7 @@ with tab5:
     st.divider()
     
     # Q37: Organization Strategy
-    st.subheader("37. Organization Strategy *")
+    st.subheader("37. How would you describe your organization's strategy? *")
     strategy = [
         "Organization does not have a documented vision, mission, values and principles",
         "Organization has a basic strategy in place to guide operations and decision-making",
@@ -708,7 +708,7 @@ with tab5:
     st.divider()
     
     # Q38: Code of Conduct
-    st.subheader("38. Communication of Code of Conduct *")
+    st.subheader("38. How is your Code of Conduct communicated? *")
     code_conduct = [
         "Organization does not publish code of conduct",
         "Organization has a basic communication process for the Code of Conduct",
@@ -720,7 +720,7 @@ with tab5:
     st.divider()
     
     # Q39: Anti-Corruption
-    st.subheader("39. Anti-Corruption Management System *")
+    st.subheader("39. What anti‑corruption management system do you have? *")
     anti_corruption = [
         "Organization does not have any anti-corruption management system",
         "Organization has a basic in-house anti-corruption management system in place.",
@@ -732,7 +732,7 @@ with tab5:
     st.divider()
     
     # Q40: Whistleblower
-    st.subheader("40. Whistleblower Program *")
+    st.subheader("40. Do you have an effective whistleblower program? *")
     whistleblower = [
         "Organization does not have any whistleblower program",
         "Organization is planning to have a whistleblower program",
@@ -744,7 +744,7 @@ with tab5:
     st.divider()
     
     # Q41: Accounting System
-    st.subheader("41. Accounting System *")
+    st.subheader("41. How robust and transparent is your accounting system? *")
     accounting = [
         "Organization does not have an accurate and transparent accounting method",
         "Organization has basic accounting system such as P&L, Balance Sheet and Cash Flow",
@@ -756,7 +756,7 @@ with tab5:
     st.divider()
     
     # Q42: Data Privacy
-    st.subheader("42. Data Privacy System *")
+    st.subheader("42. How do you protect privacy and manage data security? *")
     data_privacy = [
         "Organization does not have a clear data protection, privacy and data protection scheme",
         "Organization is planning to set a clear data protection, privacy and data protection scheme",
@@ -1036,179 +1036,18 @@ with col2:
     # Validation check
     required_fields = [
         'iesg_company_name',
-        'iesg_email',
-        'iesg_phone'
+        'iesg_email'
     ]
     
     all_filled = all(st.session_state.get(field, '') != '' for field in required_fields)
     
     if not all_filled:
-        st.warning("⚠️ Please fill in at least the company information (Section A, Q1) before downloading.")
+        st.warning("⚠️ Company Name and Email must be populated (auto-filled).")
     
     if st.button("📥 Generate PDF Report", type="primary", use_container_width=True, disabled=not all_filled):
         try:
-            from reportlab.lib.pagesizes import letter, A4
-            from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-            from reportlab.lib.units import inch
-            from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak
-            from reportlab.lib import colors
-            from reportlab.lib.enums import TA_CENTER
-            
-            # Create PDF buffer
-            buffer = BytesIO()
-            doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=0.5*inch, bottomMargin=0.5*inch)
-            
-            # Styles
-            styles = getSampleStyleSheet()
-            title_style = ParagraphStyle(
-                'CustomTitle',
-                parent=styles['Heading1'],
-                fontSize=20,
-                textColor=colors.HexColor('#1f4788'),
-                spaceAfter=30,
-                alignment=TA_CENTER
-            )
-            heading_style = ParagraphStyle(
-                'CustomHeading',
-                parent=styles['Heading2'],
-                fontSize=14,
-                textColor=colors.HexColor('#1f4788'),
-                spaceAfter=12,
-                spaceBefore=12
-            )
-            subheading_style = ParagraphStyle(
-                'CustomSubHeading',
-                parent=styles['Heading3'],
-                fontSize=11,
-                textColor=colors.HexColor('#333333'),
-                spaceAfter=6,
-                spaceBefore=6
-            )
-            
-            # Build PDF content
-            content = []
-            
-            # Title
-            content.append(Paragraph("i-ESG Ready Questionnaire", title_style))
-            content.append(Paragraph("ESG Readiness Self-Assessment", styles['Normal']))
-            content.append(Spacer(1, 0.3*inch))
-            content.append(Paragraph(f"Generated: {datetime.now().strftime('%B %d, %Y')}", styles['Normal']))
-            
-            # Add score if calculated
-            if 'iesg_score' in st.session_state:
-                content.append(Spacer(1, 0.2*inch))
-                score_style = ParagraphStyle(
-                    'ScoreStyle',
-                    parent=styles['Normal'],
-                    fontSize=14,
-                    textColor=colors.HexColor('#1f4788'),
-                    alignment=TA_CENTER,
-                    spaceAfter=6
-                )
-                content.append(Paragraph(
-                    f"<b>ESG Readiness Score: {st.session_state.iesg_score}/{st.session_state.iesg_max_score} ({st.session_state.iesg_percentage:.1f}%)</b>",
-                    score_style
-                ))
-                
-                # Score interpretation
-                if st.session_state.iesg_percentage >= 80:
-                    interpretation = "Excellent - Strong ESG readiness and maturity"
-                elif st.session_state.iesg_percentage >= 60:
-                    interpretation = "Good Progress - On the right track with room for improvement"
-                elif st.session_state.iesg_percentage >= 40:
-                    interpretation = "Developing - Started ESG journey, needs more comprehensive implementation"
-                else:
-                    interpretation = "Getting Started - Early stages of ESG implementation"
-                
-                content.append(Paragraph(f"<i>{interpretation}</i>", styles['Normal']))
-            
-            content.append(Spacer(1, 0.5*inch))
-            
-            # Helper function to add Q&A
-            def add_qa(question, answer, content_list):
-                content_list.append(Paragraph(f"<b>{question}</b>", subheading_style))
-                if isinstance(answer, list):
-                    answer_text = ", ".join(answer) if answer else "Not specified"
-                else:
-                    answer_text = str(answer) if answer else "Not specified"
-                content_list.append(Paragraph(answer_text, styles['Normal']))
-                content_list.append(Spacer(1, 0.15*inch))
-            
-            # Section A
-            content.append(Paragraph("Section A: About The Company", heading_style))
-            add_qa("Company Name", st.session_state.iesg_company_name, content)
-            add_qa("Email Address", st.session_state.iesg_email, content)
-            add_qa("Phone Number", st.session_state.iesg_phone, content)
-            add_qa("Location", st.session_state.iesg_location, content)
-            add_qa("Sub-sector", st.session_state.iesg_subsector, content)
-            if st.session_state.iesg_subsector == "Other (please specify)":
-                add_qa("Sub-sector (Other)", st.session_state.iesg_subsector_other, content)
-            add_qa("Company Size", st.session_state.iesg_company_size, content)
-            add_qa("Company Type", st.session_state.iesg_company_type, content)
-            add_qa("Sustainability Reporting Standards", st.session_state.iesg_reporting_standard, content)
-            if "None of the above" in st.session_state.iesg_reporting_standard:
-                add_qa("Reason for No Standard", st.session_state.iesg_none_reason, content)
-            
-            content.append(PageBreak())
-            
-            # Section B
-            content.append(Paragraph("Section B: General Understanding of ESG", heading_style))
-            add_qa("Q8. Maturity Level", st.session_state.iesg_q8_maturity, content)
-            add_qa("Q9. Stakeholder Engagements", st.session_state.iesg_q9_stakeholders, content)
-            add_qa("Q10. Business Case Elements", st.session_state.iesg_q10_business_case, content)
-            add_qa("Q11. ESG Goals", st.session_state.iesg_q11_esg_goals, content)
-            add_qa("Q12. ESG Leadership", st.session_state.iesg_q12_esg_leadership, content)
-            add_qa("Q13. ESG Reporting Standards", st.session_state.iesg_q13_esg_reporting, content)
-            add_qa("Q14. Data Understanding", st.session_state.iesg_q14_data_understanding, content)
-            add_qa("Q15. ESG Elements", st.session_state.iesg_q15_esg_elements, content)
-            add_qa("Q16. Validation", st.session_state.iesg_q16_validation, content)
-            
-            content.append(PageBreak())
-            
-            # Section C
-            content.append(Paragraph("Section C: Environment", heading_style))
-            add_qa("Q17. Carbon Footprint Reduction", st.session_state.iesg_q17_carbon, content)
-            add_qa("Q18. GHG Emissions", st.session_state.iesg_q18_ghg, content)
-            add_qa("Q19. Water Efficiency", st.session_state.iesg_q19_water, content)
-            add_qa("Q20. Material, Waste and Effluent", st.session_state.iesg_q20_waste, content)
-            add_qa("Q21. Waste-Water Management", st.session_state.iesg_q21_wastewater, content)
-            add_qa("Q22. Energy Consumption", st.session_state.iesg_q22_energy, content)
-            add_qa("Q23. Biodiversity", st.session_state.iesg_q23_biodiversity, content)
-            add_qa("Q24. Eco-Friendly Raw Materials", st.session_state.iesg_q24_eco_materials, content)
-            add_qa("Q25. Reforestation", st.session_state.iesg_q25_reforestation, content)
-            
-            content.append(PageBreak())
-            
-            # Section D
-            content.append(Paragraph("Section D: Social", heading_style))
-            add_qa("Q26. Employee Involvement", st.session_state.iesg_q26_employee_involvement, content)
-            add_qa("Q27. Domestic Labour Laws", st.session_state.iesg_q27_domestic_labour, content)
-            add_qa("Q28. International Labour Laws", st.session_state.iesg_q28_intl_labour, content)
-            add_qa("Q29. Equal Employment", st.session_state.iesg_q29_equal_employment, content)
-            add_qa("Q30. Minimum Wage", st.session_state.iesg_q30_min_wage, content)
-            add_qa("Q31. Health & Safety", st.session_state.iesg_q31_health_safety, content)
-            add_qa("Q32. Grievance Handling", st.session_state.iesg_q32_grievance, content)
-            add_qa("Q33. Upskilling Programmes", st.session_state.iesg_q33_upskilling, content)
-            add_qa("Q34. Community", st.session_state.iesg_q34_community, content)
-            
-            content.append(PageBreak())
-            
-            # Section E
-            content.append(Paragraph("Section E: Governance", heading_style))
-            add_qa("Q35. Board Leadership", st.session_state.iesg_q35_board_leadership, content)
-            add_qa("Q36. Board and Management ESG Awareness", st.session_state.iesg_q36_board_awareness, content)
-            add_qa("Q37. Organization Strategy", st.session_state.iesg_q37_strategy, content)
-            add_qa("Q38. Code of Conduct", st.session_state.iesg_q38_code_conduct, content)
-            add_qa("Q39. Anti-Corruption Management", st.session_state.iesg_q39_anti_corruption, content)
-            add_qa("Q40. Whistleblower Program", st.session_state.iesg_q40_whistleblower, content)
-            add_qa("Q41. Accounting System", st.session_state.iesg_q41_accounting, content)
-            add_qa("Q42. Data Privacy System", st.session_state.iesg_q42_data_privacy, content)
-            
-            # Build PDF
-            doc.build(content)
-            buffer.seek(0)
-            
-            # Download button
+            from core.esg_questionnaire_pdf import generate_iesg_pdf
+            buffer = generate_iesg_pdf(st.session_state)
             filename = f"iESG_Ready_{st.session_state.iesg_company_name.replace(' ', '_')}_{datetime.now().strftime('%Y%m%d')}.pdf"
             st.download_button(
                 label="📥 Download PDF",
@@ -1218,9 +1057,8 @@ with col2:
                 use_container_width=True
             )
             st.success("✅ PDF generated successfully!")
-            
         except ImportError:
-            st.error("❌ ReportLab not installed. Please install it: `pip install reportlab`")
+            st.error("❌ Install ReportLab: `pip install reportlab`")
         except Exception as e:
             st.error(f"❌ Error generating PDF: {str(e)}")
             st.exception(e)
