@@ -15,7 +15,7 @@ PAGE_PERMISSIONS = {
         '06_👥_User_Management.py',  # Admin only
         '07_🏢_Company_Management.py',  # Admin only
         '08_📋_SEDG_Disclosure.py',
-        '09_📝_iESG_Ready.py',
+        '09_📝_ESG_Ready_Questionnaire.py',
         '10_📤_Document_Requests.py',  # ✅ Added Document Requests
         '11_⚙️_Manage_Emission_Factors.py',
     ],
@@ -25,7 +25,7 @@ PAGE_PERMISSIONS = {
         '03_📊_View_Data.py',
         '04_✅_Verify_Data.py',
         '08_📋_SEDG_Disclosure.py',
-        '09_📝_iESG_Ready.py',
+        '09_📝_ESG_Ready_Questionnaire.py',
         '10_📤_Document_Requests.py',  # ✅ Manager can request/share documents
         '11_⚙️_Manage_Emission_Factors.py',
     ],
@@ -33,7 +33,7 @@ PAGE_PERMISSIONS = {
         '01_🏠_Dashboard.py',
         '02_➕_Add_Activity.py',
         '03_📊_View_Data.py',
-        '09_📝_iESG_Ready.py',
+        '09_📝_ESG_Ready_Questionnaire.py',
     ]
 }
 
