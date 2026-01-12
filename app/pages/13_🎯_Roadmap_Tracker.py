@@ -55,7 +55,7 @@ if 'page_section' not in st.session_state:
 
 # Quick navigation buttons at the top
 st.markdown("### Quick Navigation")
-navigation_cols = st.columns(5)
+navigation_cols = st.columns(4)
 with navigation_cols[0]:
     if st.button("📊 Overview", use_container_width=True, type="primary" if st.session_state.page_section == "📊 Overview" else "secondary"):
         st.session_state.page_section = "📊 Overview"
@@ -74,11 +74,6 @@ with navigation_cols[2]:
 with navigation_cols[3]:
     if st.button("📈 Year-over-Year", use_container_width=True, type="primary" if st.session_state.page_section == "📈 Year-over-Year" else "secondary"):
         st.session_state.page_section = "📈 Year-over-Year"
-        st.rerun()
-
-with navigation_cols[4]:
-    if st.button("📋 Reports", use_container_width=True, type="primary" if st.session_state.page_section == "📋 Reports" else "secondary"):
-        st.session_state.page_section = "📋 Reports"
         st.rerun()
 
 page_section = st.session_state.page_section
@@ -207,8 +202,7 @@ if page_section == "📊 Overview":
                     with cols[idx]:
                         st.metric(
                             status.replace('_', ' ').title(),
-                            f"{data['count']} initiatives",
-                            f"{data['total_expected']:,.1f} t CO₂e potential"
+                            f"{data['count']} initiatives"
                         )
         else:
             st.info("💡 No initiatives created yet. Start by adding your first reduction initiative!")
@@ -388,27 +382,25 @@ elif page_section == "💡 Action Plans":
                     help="Give your initiative a clear, descriptive name"
                 )
                 
+                target_goal = st.text_input(
+                    "Target / Goal (optional)",
+                    placeholder="e.g., Reduce grid electricity use by 15% or Achieve ISO 14001 certification",
+                    help="Briefly describe the intended outcome or goal of this initiative"
+                )
+                
                 col1, col2 = st.columns(2)
                 
                 with col1:
-                    target_scope = st.multiselect(
-                        "Target Scope(s)",
-                        ["Scope 1", "Scope 2", "Scope 3"],
-                        help="Which scopes will this initiative impact?"
-                    )
-                    
-                    expected_reduction = st.number_input(
-                        "Expected Reduction (tonnes CO₂e/year) *",
-                        min_value=0.0,
-                        step=0.1,
-                        help="How much CO2e will this reduce annually?"
-                    )
-                    
                     estimated_cost = st.number_input(
                         "Estimated Cost ($)",
                         min_value=0.0,
                         step=100.0,
-                        help="Total implementation cost"
+                        help="Total implementation cost (optional)"
+                    )
+
+                    start_date = st.date_input(
+                        "Start Date",
+                        help="When will/did this initiative start?"
                     )
                 
                 with col2:
@@ -416,11 +408,6 @@ elif page_section == "💡 Action Plans":
                         "Status *",
                         ["Planned", "In Progress", "Completed", "On Hold", "Cancelled"],
                         help="Current status of this initiative"
-                    )
-                    
-                    start_date = st.date_input(
-                        "Start Date",
-                        help="When will/did this initiative start?"
                     )
                     
                     target_completion = st.date_input(
@@ -444,8 +431,6 @@ elif page_section == "💡 Action Plans":
                 if submitted:
                     if not initiative_name:
                         st.error("Initiative name is required")
-                    elif expected_reduction <= 0:
-                        st.error("Expected reduction must be greater than 0")
                     else:
                         db = get_database()
                         
@@ -453,15 +438,14 @@ elif page_section == "💡 Action Plans":
                             insert_query = """
                                 INSERT INTO reduction_initiatives (
                                     company_id, initiative_name, description,
-                                    target_scopes, expected_reduction, estimated_cost,
+                                    target_goal, estimated_cost,
                                     status, start_date, target_completion_date,
                                     responsible_person, created_by
-                                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                             """
                             success = db.execute_query(insert_query, (
                                 company_id, initiative_name, description,
-                                ','.join(target_scope) if target_scope else None,
-                                expected_reduction, estimated_cost if estimated_cost > 0 else None,
+                                target_goal, estimated_cost if estimated_cost > 0 else None,
                                 status, start_date, target_completion,
                                 responsible_person, st.session_state.user_id
                             ))
@@ -504,21 +488,18 @@ elif page_section == "💡 Action Plans":
                 }
                 status_emoji = status_colors.get(init['status'], '⚪')
                 
-                with st.expander(f"{status_emoji} {init['initiative_name']} ({init['expected_reduction']:,.1f} t CO₂e)"):
+                with st.expander(f"{status_emoji} {init['initiative_name']}"):
                     col1, col2 = st.columns([2, 1])
                     
                     with col1:
                         st.write(f"**Description:** {init['description'] or 'N/A'}")
-                        st.write(f"**Target Scopes:** {init['target_scopes'] or 'N/A'}")
+                        st.write(f"**Target / Goal:** {init.get('target_goal') or 'N/A'}")
                         st.write(f"**Responsible:** {init['responsible_person'] or 'N/A'}")
                     
                     with col2:
                         st.write(f"**Status:** {init['status']}")
-                        st.write(f"**Expected Reduction:** {init['expected_reduction']:,.1f} t CO₂e/year")
                         if init['estimated_cost']:
                             st.write(f"**Estimated Cost:** ${init['estimated_cost']:,.2f}")
-                            cost_per_tonne = init['estimated_cost'] / init['expected_reduction']
-                            st.write(f"**Cost per tonne:** ${cost_per_tonne:,.2f}/t CO₂e")
                         
                         if init['start_date']:
                             st.write(f"**Start:** {init['start_date'].strftime('%Y-%m-%d')}")
@@ -542,94 +523,188 @@ elif page_section == "💡 Action Plans":
             st.info("No initiatives found with the selected filters")
 
 # ============================================================================
-# SECTION 4: Year-over-Year Comparison (WITH CACHING)
+# SECTION 4: Year-over-Year Comparison (INITIATIVES & EMISSIONS)
 # ============================================================================
 elif page_section == "📈 Year-over-Year":
-    st.header("📈 Year-over-Year Analysis")
+    st.header("📈 Year-over-Year Strategic Overview")
+    st.markdown("Track initiatives, reduction goals, and emissions progress across years")
+    st.divider()
     
-    # Use cached function
-    yoy_data_list = get_yearly_emissions(company_id)
+    # Get all data needed
+    all_initiatives = get_reduction_initiatives(company_id, None)
+    yoy_emissions = get_yearly_emissions(company_id)
+    scope_data = get_yearly_emissions_by_scope(company_id)
     
-    if len(yoy_data_list) >= 2:
-        df = pd.DataFrame(yoy_data_list)
+    # ========== SECTION 1: Initiatives Timeline ==========
+    st.subheader("🎯 Initiatives Timeline")
+    
+    if all_initiatives:
+        # Organize initiatives by year
+        initiatives_by_year = {}
+        
+        for init in all_initiatives:
+            if init['start_date']:
+                year = init['start_date'].year
+                if year not in initiatives_by_year:
+                    initiatives_by_year[year] = {'total': 0, 'by_status': {}}
+                initiatives_by_year[year]['total'] += 1
+                
+                status = init['status']
+                if status not in initiatives_by_year[year]['by_status']:
+                    initiatives_by_year[year]['by_status'][status] = 0
+                initiatives_by_year[year]['by_status'][status] += 1
+        
+        if initiatives_by_year:
+            # Timeline visualization
+            years = sorted(initiatives_by_year.keys())
+            
+            # Display by year
+            col1, col2, col3, col4 = st.columns(4)
+            
+            status_colors_map = {
+                'Planned': '🔵',
+                'In Progress': '🟡',
+                'Completed': '✅',
+                'On Hold': '🟠',
+                'Cancelled': '❌'
+            }
+            
+            # Count initiatives by status across all years
+            total_by_status = {'Planned': 0, 'In Progress': 0, 'Completed': 0, 'On Hold': 0, 'Cancelled': 0}
+            for year_data in initiatives_by_year.values():
+                for status, count in year_data['by_status'].items():
+                    if status in total_by_status:
+                        total_by_status[status] += count
+            
+            with col1:
+                st.metric("Total Initiatives", len(all_initiatives))
+            with col2:
+                st.metric("✅ Completed", total_by_status['Completed'])
+            with col3:
+                st.metric("🟡 In Progress", total_by_status['In Progress'])
+            with col4:
+                st.metric("🔵 Planned", total_by_status['Planned'])
+            
+            st.divider()
+            
+            # Year-by-year breakdown
+            timeline_data = []
+            for year in years:
+                year_info = initiatives_by_year[year]
+                timeline_data.append({
+                    'Year': year,
+                    'Total': year_info['total'],
+                    'Completed': year_info['by_status'].get('Completed', 0),
+                    'In Progress': year_info['by_status'].get('In Progress', 0),
+                    'Planned': year_info['by_status'].get('Planned', 0)
+                })
+            
+            if timeline_data:
+                timeline_df = pd.DataFrame(timeline_data)
+                
+                # Stacked bar chart - initiatives by year
+                fig = px.bar(
+                    timeline_df,
+                    x='Year',
+                    y=['Completed', 'In Progress', 'Planned'],
+                    title="Initiatives Started by Year & Status",
+                    labels={'value': 'Count', 'variable': 'Status'},
+                    barmode='stack',
+                    color_discrete_map={'Completed': '#31AA3D', 'In Progress': '#FFA500', 'Planned': '#4A90E2'}
+                )
+                fig.update_layout(height=350)
+                st.plotly_chart(fig, use_container_width=True)
+                
+                # Completion rate
+                st.subheader("📊 Completion Rate by Year")
+                timeline_df['Completion %'] = (timeline_df['Completed'] / timeline_df['Total'] * 100).round(1)
+                
+                fig2 = px.line(
+                    timeline_df,
+                    x='Year',
+                    y='Completion %',
+                    title="Initiative Completion Rate Over Time",
+                    markers=True,
+                    text='Completion %'
+                )
+                fig2.update_traces(textposition='top center', marker=dict(size=10))
+                fig2.update_layout(height=350, yaxis_range=[0, 100])
+                st.plotly_chart(fig2, use_container_width=True)
+        else:
+            st.info("No initiatives with start dates to display")
+    else:
+        st.info("📋 No initiatives yet. Create your first initiative in the Action Plans tab!")
+    
+    st.divider()
+    
+    # ========== SECTION 2: Emissions & Reductions ==========
+    st.subheader("📉 Emissions Progress & Reductions")
+    
+    if len(yoy_emissions) >= 2:
+        df = pd.DataFrame(yoy_emissions)
+        df = df.sort_values('year')
         
         # Calculate year-over-year changes
         df['change'] = df['total_emissions'].diff()
         df['change_pct'] = df['total_emissions'].pct_change() * 100
         
-        # Display metrics
-        st.subheader("Annual Emissions Summary")
-        cols = st.columns(len(df))
+        # Display metrics for each year
+        col_count = min(len(df), 5)
+        cols = st.columns(col_count)
+        
         for idx, row in df.iterrows():
-            with cols[idx]:
-                delta = f"{row['change']:.1f} t CO₂e ({row['change_pct']:.1f}%)" if pd.notna(row['change']) else None
+            col_idx = idx % col_count
+            with cols[col_idx]:
+                delta = f"{row['change']:.1f} t ({row['change_pct']:.1f}%)" if pd.notna(row['change']) else None
                 st.metric(
                     f"{int(row['year'])}",
-                    f"{row['total_emissions']:,.1f} t CO₂e",
+                    f"{row['total_emissions']:,.1f} t",
                     delta,
                     delta_color="inverse"
                 )
         
-        # Bar chart
-        st.subheader("Emissions Trend")
-        fig = px.bar(
-            df,
-            x='year',
-            y='total_emissions',
-            title="Annual Emissions",
-            labels={'total_emissions': 'Emissions (tonnes CO₂e)', 'year': 'Year'},
-            text='total_emissions'
+        st.divider()
+        
+        # Emissions trend
+        fig = go.Figure()
+        
+        fig.add_trace(go.Scatter(
+            x=df['year'],
+            y=df['total_emissions'],
+            mode='lines+markers',
+            name='Total Emissions',
+            line=dict(color='#FF6B6B', width=3),
+            marker=dict(size=10)
+        ))
+        
+        fig.update_layout(
+            title="Total Annual GHG Emissions Trend",
+            xaxis_title="Year",
+            yaxis_title="Emissions (tonnes CO₂e)",
+            hovermode='x unified',
+            height=400,
+            template='plotly_white'
         )
-        fig.update_traces(texttemplate='%{text:,.1f}', textposition='outside')
-        fig.update_layout(height=400)
+        
         st.plotly_chart(fig, use_container_width=True)
         
-        # Breakdown by scope using cached data
-        st.subheader("Breakdown by Scope")
-        scope_data = get_yearly_emissions_by_scope(company_id)
-        
+        # Scope breakdown
         if scope_data:
             scope_df = pd.DataFrame(scope_data)
             
-            fig = px.bar(
+            fig2 = px.bar(
                 scope_df,
                 x='year',
                 y='total_emissions',
                 color='scope_name',
-                title="Emissions by Scope Over Time",
+                title="Emissions by Scope (Stacked)",
                 labels={'total_emissions': 'Emissions (tonnes CO₂e)', 'year': 'Year'},
                 barmode='stack'
             )
-            fig.update_layout(height=400)
-            st.plotly_chart(fig, use_container_width=True)
+            fig2.update_layout(height=400)
+            st.plotly_chart(fig2, use_container_width=True)
     else:
-        st.info("Need at least 2 years of data for year-over-year comparison")
-        st.markdown("Keep adding emissions data to see trends over time!")
+        st.info("⏳ Need at least 2 years of emissions data for year-over-year comparison")
+        st.markdown("Keep logging emissions to see annual trends!")
 
-# ============================================================================
-# SECTION 5: Reports
-# ============================================================================
-elif page_section == "📋 Reports":
-    st.header("📋 Reduction Reports")
-    
-    st.info("Generate comprehensive reports on your reduction progress")
-    
-    # Report options
-    report_type = st.selectbox(
-        "Select Report Type",
-        [
-            "Executive Summary",
-            "Detailed Progress Report",
-            "Initiative Performance",
-            "Cost-Benefit Analysis"
-        ]
-    )
-    
-    report_period = st.selectbox(
-        "Report Period",
-        ["Current Year", "Last Year", "Last 3 Years", "Last 5 Years", "All Time"]
-    )
-    
-    if st.button("📄 Generate Report", type="primary"):
-        st.success("Report generation feature - to be implemented")
-        st.info("This will generate a PDF/Excel report with the selected data")
+
