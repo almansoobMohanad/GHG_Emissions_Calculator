@@ -64,7 +64,7 @@ def get_all_reduction_goals(company_id: int) -> List[Dict[str, Any]]:
 
 
 # ============================================================================
-# REDUCTION INITIATIVES CACHE
+# REDUCTION INITIATIVES CACHE (UPDATED WITH PROGRESS FIELDS)
 # ============================================================================
 
 @st.cache_data(ttl=300, show_spinner=False)  # Cache for 5 minutes
@@ -72,7 +72,7 @@ def get_reduction_initiatives(
     company_id: int, 
     status_filter: Optional[List[str]] = None
 ) -> List[Dict[str, Any]]:
-    """Get reduction initiatives for a company (cached)."""
+    """Get reduction initiatives for a company with progress tracking (cached)."""
     db = get_database()
     
     if status_filter and len(status_filter) > 0:
@@ -100,18 +100,51 @@ def get_reduction_initiatives(
     if not results:
         return []
     
-    return [{
-        'id': r[0], 'company_id': r[1], 'initiative_name': r[2],
-        'description': r[3], 'target_goal': r[4], 'target_scopes': r[5],
-        'expected_reduction': float(r[6]) if r[6] else None,
-        'actual_reduction': float(r[7]) if r[7] else None, 
-        'estimated_cost': float(r[8]) if r[8] else None,
-        'actual_cost': float(r[9]) if r[9] else None, 'status': r[10],
-        'start_date': r[11], 'target_completion_date': r[12],
-        'actual_completion_date': r[13], 'responsible_person': r[14],
-        'created_by': r[15], 'created_at': r[16], 'updated_at': r[17],
-        'created_by_name': r[18]
-    } for r in results]
+    # Updated to include new progress tracking fields
+    initiatives = []
+    for r in results:
+        initiative = {
+            'id': r[0], 
+            'company_id': r[1], 
+            'initiative_name': r[2],
+            'description': r[3], 
+            'target_goal': r[4], 
+            'target_scopes': r[5],
+            'expected_reduction': float(r[6]) if r[6] else None,
+            'actual_reduction': float(r[7]) if r[7] else None, 
+            'estimated_cost': float(r[8]) if r[8] else None,
+            'actual_cost': float(r[9]) if r[9] else None, 
+            'status': r[10],
+            'start_date': r[11], 
+            'target_completion_date': r[12],
+            'actual_completion_date': r[13], 
+            'responsible_person': r[14],
+            'created_by': r[15], 
+            'created_at': r[16], 
+            'updated_at': r[17],
+        }
+        
+        # Add progress tracking fields if they exist (after migration)
+        # These are the new columns added by migrate_initiatives_progress.py
+        if len(r) > 18:
+            initiative['progress_type'] = r[18] if len(r) > 18 else 'percentage'
+            initiative['target_value'] = float(r[19]) if len(r) > 19 and r[19] else 100.0
+            initiative['current_progress'] = float(r[20]) if len(r) > 20 and r[20] else 0.0
+            initiative['progress_notes'] = r[21] if len(r) > 21 else None
+            initiative['last_progress_update'] = r[22] if len(r) > 22 else None
+            initiative['created_by_name'] = r[23] if len(r) > 23 else None
+        else:
+            # Backwards compatibility - set defaults if columns don't exist yet
+            initiative['progress_type'] = 'percentage'
+            initiative['target_value'] = 100.0
+            initiative['current_progress'] = 0.0
+            initiative['progress_notes'] = None
+            initiative['last_progress_update'] = None
+            initiative['created_by_name'] = r[18] if len(r) > 18 else None
+        
+        initiatives.append(initiative)
+    
+    return initiatives
 
 
 @st.cache_data(ttl=300, show_spinner=False)
