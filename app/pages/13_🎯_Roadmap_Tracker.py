@@ -1,8 +1,8 @@
 """
-Roadmap Tracker - Strategic planning for emissions reduction initiatives - WITH CACHING
+Roadmap Tracker - Strategic planning for emissions reduction initiatives - WITH PROGRESS TRACKING
 Save as: pages/13_🎯_Roadmap_Tracker.py
 
-This version uses cached functions for better performance
+This version includes progress tracking for initiatives
 """
 import streamlit as st
 import pandas as pd
@@ -53,6 +53,10 @@ with st.sidebar:
 if 'page_section' not in st.session_state:
     st.session_state.page_section = "📊 Overview"
 
+# Initialize sub-tab for Action Plans
+if 'action_plans_tab' not in st.session_state:
+    st.session_state.action_plans_tab = 0  # 0 = Add Initiative, 1 = Manage Initiatives
+
 # Quick navigation buttons at the top
 st.markdown("### Quick Navigation")
 navigation_cols = st.columns(4)
@@ -91,8 +95,27 @@ if status == 'no_company':
 company_id = st.session_state.company_id
 user_role = st.session_state.get('role', 'normal_user')
 
+# Helper function to calculate progress percentage
+def calculate_progress_percentage(initiative):
+    """Calculate progress percentage based on progress type"""
+    progress_type = initiative.get('progress_type', 'percentage')
+    current = initiative.get('current_progress', 0) or 0
+    target = initiative.get('target_value') or 100
+    
+    if progress_type == 'percentage':
+        return min(current, 100)
+    elif progress_type == 'checklist':
+        if target > 0:
+            return min((current / target) * 100, 100)
+        return 0
+    elif progress_type == 'numeric':
+        if target > 0:
+            return min((current / target) * 100, 100)
+        return 0
+    return 0
+
 # ============================================================================
-# SECTION 1: Overview Dashboard (USING CACHED DATA)
+# SECTION 1: Overview Dashboard (WITH PROGRESS TRACKING)
 # ============================================================================
 if page_section == "📊 Overview":
     st.header("📊 Reduction Overview")
@@ -188,24 +211,109 @@ if page_section == "📊 Overview":
             
             st.plotly_chart(fig, use_container_width=True)
         
-        # Active initiatives summary using cached data
-        st.subheader("💡 Active Initiatives")
-        initiatives_summary = get_initiatives_summary(company_id)
+        st.divider()
         
-        if initiatives_summary:
-            status_order = ['Planned', 'In Progress', 'Completed']
-            display_summaries = {k: v for k, v in initiatives_summary.items() if k in status_order}
+        # Active initiatives with progress tracking
+        st.subheader("💡 Active Initiatives Progress")
+        
+        # Add prominent button to go to manage initiatives
+        col1, col2, col3 = st.columns([2, 1, 2])
+        with col2:
+            if st.button("➕ Update Progress", type="primary", use_container_width=True):
+                st.session_state.page_section = "💡 Action Plans"
+                st.session_state.action_plans_subsection = "📋 Manage Initiatives"
+                st.rerun()
+        
+        st.markdown("---")
+        
+        # Get all active initiatives (not completed or cancelled)
+        active_initiatives = get_reduction_initiatives(company_id, ['Planned', 'In Progress'])
+        
+        if active_initiatives:
+            # Calculate overall progress
+            total_initiatives = len(active_initiatives)
+            total_progress = sum(calculate_progress_percentage(init) for init in active_initiatives)
+            avg_progress = total_progress / total_initiatives if total_initiatives > 0 else 0
             
-            if display_summaries:
-                cols = st.columns(len(display_summaries))
-                for idx, (status, data) in enumerate(display_summaries.items()):
-                    with cols[idx]:
-                        st.metric(
-                            status.replace('_', ' ').title(),
-                            f"{data['count']} initiatives"
-                        )
+            # Summary metrics
+            col1, col2, col3, col4 = st.columns(4)
+            with col1:
+                st.metric("Active Initiatives", total_initiatives)
+            with col2:
+                st.metric("Average Progress", f"{avg_progress:.1f}%")
+            with col3:
+                completed_count = sum(1 for init in active_initiatives if calculate_progress_percentage(init) >= 100)
+                st.metric("Ready to Complete", completed_count)
+            with col4:
+                in_progress_count = sum(1 for init in active_initiatives if 0 < calculate_progress_percentage(init) < 100)
+                st.metric("In Progress", in_progress_count)
+            
+            st.markdown("---")
+            
+            # Display each initiative with progress bar
+            for init in active_initiatives:
+                progress_pct = calculate_progress_percentage(init)
+                
+                # Determine color based on progress
+                if progress_pct >= 100:
+                    status_color = "🟢"
+                    bar_color = "#28a745"
+                elif progress_pct >= 50:
+                    status_color = "🟡"
+                    bar_color = "#ffc107"
+                elif progress_pct > 0:
+                    status_color = "🟠"
+                    bar_color = "#fd7e14"
+                else:
+                    status_color = "⚪"
+                    bar_color = "#6c757d"
+                
+                with st.container():
+                    col1, col2 = st.columns([3, 1])
+                    
+                    with col1:
+                        st.markdown(f"**{status_color} {init['initiative_name']}**")
+                        
+                        # Progress bar
+                        st.progress(min(progress_pct / 100, 1.0))
+                        
+                        # Progress details based on type
+                        progress_type = init.get('progress_type', 'percentage')
+                        current = init.get('current_progress', 0) or 0
+                        target = init.get('target_value') or 100
+                        
+                        if progress_type == 'percentage':
+                            st.caption(f"Progress: {current:.0f}%")
+                        elif progress_type == 'checklist':
+                            st.caption(f"Progress: {current:.0f}/{target:.0f} items completed")
+                        elif progress_type == 'numeric':
+                            st.caption(f"Progress: {current:,.1f}/{target:,.1f}")
+                    
+                    with col2:
+                        st.markdown(f"**{progress_pct:.1f}%**")
+                        st.caption(f"Status: {init['status']}")
+                        
+                        if init.get('last_progress_update'):
+                            st.caption(f"Updated: {init['last_progress_update'].strftime('%Y-%m-%d')}")
+                    
+                    st.markdown("---")
+            
+            # Button at the bottom to add more progress
+            st.markdown("---")
+            col1, col2, col3 = st.columns([1, 1, 1])
+            with col2:
+                if st.button("🔄 Update All Progress", type="secondary", use_container_width=True, key="update_all_bottom"):
+                    st.session_state.page_section = "💡 Action Plans"
+                    st.session_state.action_plans_subsection = "📋 Manage Initiatives"
+                    st.rerun()
         else:
-            st.info("💡 No initiatives created yet. Start by adding your first reduction initiative!")
+            col1, col2, col3 = st.columns([1, 2, 1])
+            with col2:
+                st.info("💡 No active initiatives. Create your first initiative!")
+                if st.button("➕ Create Initiative", type="primary", use_container_width=True):
+                    st.session_state.page_section = "💡 Action Plans"
+                    st.session_state.action_plans_subsection = "➕ Add Initiative"
+                    st.rerun()
     
     else:
         st.info("🎯 **No active reduction goal set yet.**")
@@ -361,14 +469,32 @@ elif page_section == "🎯 Reduction Goals":
             st.info("No goals set yet")
 
 # ============================================================================
-# SECTION 3: Action Plans / Initiatives (WITH CACHING)
+# SECTION 3: Action Plans / Initiatives (WITH PROGRESS TRACKING)
 # ============================================================================
 elif page_section == "💡 Action Plans":
     st.header("💡 Reduction Initiatives")
     
-    tab1, tab2 = st.tabs(["➕ Add Initiative", "📋 Manage Initiatives"])
+    # Use session state to control which sub-section is active
+    if 'action_plans_subsection' not in st.session_state:
+        st.session_state.action_plans_subsection = "📋 Manage Initiatives" if st.session_state.get('action_plans_tab', 0) == 1 else "➕ Add Initiative"
     
-    with tab1:
+    # Sub-navigation for Action Plans
+    subsection_cols = st.columns(2)
+    with subsection_cols[0]:
+        if st.button("➕ Add Initiative", use_container_width=True, 
+                    type="primary" if st.session_state.action_plans_subsection == "➕ Add Initiative" else "secondary"):
+            st.session_state.action_plans_subsection = "➕ Add Initiative"
+            st.rerun()
+    with subsection_cols[1]:
+        if st.button("📋 Manage Initiatives", use_container_width=True,
+                    type="primary" if st.session_state.action_plans_subsection == "📋 Manage Initiatives" else "secondary"):
+            st.session_state.action_plans_subsection = "📋 Manage Initiatives"
+            st.rerun()
+    
+    st.divider()
+    
+    # Show the appropriate subsection
+    if st.session_state.action_plans_subsection == "➕ Add Initiative":
         st.subheader("Create New Initiative")
         
         # Only managers and admins can create initiatives
@@ -426,6 +552,70 @@ elif page_section == "💡 Action Plans":
                     placeholder="Who is leading this initiative?"
                 )
                 
+                st.divider()
+                st.markdown("### 📊 Progress Tracking Setup")
+                
+                col1, col2, col3 = st.columns(3)
+                
+                with col1:
+                    progress_type = st.selectbox(
+                        "Progress Type *",
+                        ["percentage", "checklist", "numeric"],
+                        format_func=lambda x: {
+                            "percentage": "📊 Percentage (0-100%)",
+                            "checklist": "☑️ Checklist (items to complete)",
+                            "numeric": "🔢 Numeric Target (custom metric)"
+                        }[x],
+                        help="How do you want to track progress?"
+                    )
+                
+                with col2:
+                    if progress_type == "percentage":
+                        target_value = 100.0
+                        st.info("Target: 100%")
+                    elif progress_type == "checklist":
+                        target_value = st.number_input(
+                            "Total Items/Tasks *",
+                            min_value=1.0,
+                            value=10.0,
+                            step=1.0,
+                            help="How many items need to be completed?"
+                        )
+                    else:  # numeric
+                        target_value = st.number_input(
+                            "Target Value *",
+                            min_value=0.0,
+                            value=100.0,
+                            step=1.0,
+                            help="What's your target number?"
+                        )
+                
+                with col3:
+                    if progress_type == "percentage":
+                        initial_progress = st.number_input(
+                            "Initial Progress (%)",
+                            min_value=0.0,
+                            max_value=100.0,
+                            value=0.0,
+                            step=1.0
+                        )
+                    elif progress_type == "checklist":
+                        initial_progress = st.number_input(
+                            "Items Already Completed",
+                            min_value=0.0,
+                            max_value=target_value,
+                            value=0.0,
+                            step=1.0
+                        )
+                    else:  # numeric
+                        initial_progress = st.number_input(
+                            "Current Value",
+                            min_value=0.0,
+                            max_value=target_value,
+                            value=0.0,
+                            step=1.0
+                        )
+                
                 submitted = st.form_submit_button("💾 Save Initiative", type="primary", use_container_width=True)
                 
                 if submitted:
@@ -440,14 +630,16 @@ elif page_section == "💡 Action Plans":
                                     company_id, initiative_name, description,
                                     target_goal, estimated_cost,
                                     status, start_date, target_completion_date,
-                                    responsible_person, created_by
-                                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                                    responsible_person, progress_type, target_value,
+                                    current_progress, created_by
+                                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                             """
                             success = db.execute_query(insert_query, (
                                 company_id, initiative_name, description,
                                 target_goal, estimated_cost if estimated_cost > 0 else None,
                                 status, start_date, target_completion,
-                                responsible_person, st.session_state.user_id
+                                responsible_person, progress_type, target_value,
+                                initial_progress, st.session_state.user_id
                             ))
                             
                             if success:
@@ -462,8 +654,10 @@ elif page_section == "💡 Action Plans":
                         except Exception as e:
                             st.error(f"❌ Database error: {str(e)}")
     
-    with tab2:
-        st.subheader("All Initiatives")
+    elif st.session_state.action_plans_subsection == "📋 Manage Initiatives":
+        st.subheader("Manage & Update Initiatives")
+        
+        st.info("💡 **Tip:** Expand any initiative below to update its progress, add notes, or change status!")
         
         # Filters
         col1, col2, col3 = st.columns(3)
@@ -488,13 +682,41 @@ elif page_section == "💡 Action Plans":
                 }
                 status_emoji = status_colors.get(init['status'], '⚪')
                 
-                with st.expander(f"{status_emoji} {init['initiative_name']}"):
+                # Calculate progress
+                progress_pct = calculate_progress_percentage(init)
+                
+                # Make the header more prominent
+                header_col1, header_col2 = st.columns([4, 1])
+                with header_col1:
+                    st.markdown(f"### {status_emoji} {init['initiative_name']}")
+                with header_col2:
+                    st.markdown(f"### {progress_pct:.0f}%")
+                
+                # Progress bar outside expander for visibility
+                st.progress(min(progress_pct / 100, 1.0))
+                
+                with st.expander("📋 View Details & Update Progress", expanded=False):
                     col1, col2 = st.columns([2, 1])
                     
                     with col1:
                         st.write(f"**Description:** {init['description'] or 'N/A'}")
                         st.write(f"**Target / Goal:** {init.get('target_goal') or 'N/A'}")
                         st.write(f"**Responsible:** {init['responsible_person'] or 'N/A'}")
+                        
+                        # Display progress details
+                        progress_type = init.get('progress_type', 'percentage')
+                        current = init.get('current_progress', 0) or 0
+                        target = init.get('target_value') or 100
+                        
+                        if progress_type == 'percentage':
+                            st.write(f"**Progress:** {current:.0f}%")
+                        elif progress_type == 'checklist':
+                            st.write(f"**Progress:** {current:.0f}/{target:.0f} items completed")
+                        elif progress_type == 'numeric':
+                            st.write(f"**Progress:** {current:,.1f}/{target:,.1f}")
+                        
+                        if init.get('progress_notes'):
+                            st.write(f"**Latest Update:** {init['progress_notes']}")
                     
                     with col2:
                         st.write(f"**Status:** {init['status']}")
@@ -505,22 +727,129 @@ elif page_section == "💡 Action Plans":
                             st.write(f"**Start:** {init['start_date'].strftime('%Y-%m-%d')}")
                         if init['target_completion_date']:
                             st.write(f"**Target Completion:** {init['target_completion_date'].strftime('%Y-%m-%d')}")
+                        
+                        if init.get('last_progress_update'):
+                            st.write(f"**Last Updated:** {init['last_progress_update'].strftime('%Y-%m-%d')}")
                     
-                    # Delete button (only for managers/admins)
+                    st.divider()
+                    
+                    # Make update section more prominent with better UI
                     if user_role in ['manager', 'admin']:
-                        if st.button(f"🗑️ Delete", key=f"delete_{init['id']}", type="secondary", use_container_width=True):
-                            db = get_database()
-                            try:
-                                delete_query = "DELETE FROM reduction_initiatives WHERE id = %s"
-                                if db.execute_query(delete_query, (init['id'],)):
-                                    # Clear cache after deletion
-                                    clear_reduction_initiatives_cache()
-                                    st.success("Initiative deleted")
-                                    st.rerun()
-                            except Exception as e:
-                                st.error(f"❌ Error deleting: {str(e)}")
-        else:
-            st.info("No initiatives found with the selected filters")
+                        st.markdown("### 📝 Update Progress")
+                        st.markdown("*Update the progress of this initiative and track your achievements*")
+                        
+                        with st.form(f"update_progress_{init['id']}"):
+                            st.markdown("#### 📊 Progress Update")
+                            
+                            col1, col2, col3 = st.columns(3)
+                            
+                            progress_type = init.get('progress_type', 'percentage')
+                            current = init.get('current_progress', 0) or 0
+                            target = init.get('target_value') or 100
+                            
+                            with col1:
+                                if progress_type == 'percentage':
+                                    st.caption("📊 Progress Type: Percentage")
+                                    new_progress = st.number_input(
+                                        "Update Progress (%)",
+                                        min_value=0.0,
+                                        max_value=100.0,
+                                        value=float(current),
+                                        step=5.0,
+                                        key=f"progress_{init['id']}",
+                                        help="Enter the current completion percentage"
+                                    )
+                                elif progress_type == 'checklist':
+                                    st.caption(f"☑️ Progress Type: Checklist (out of {target:.0f})")
+                                    new_progress = st.number_input(
+                                        "Items Completed",
+                                        min_value=0.0,
+                                        max_value=float(target),
+                                        value=float(current),
+                                        step=1.0,
+                                        key=f"progress_{init['id']}",
+                                        help=f"How many items out of {target:.0f} are done?"
+                                    )
+                                else:  # numeric
+                                    st.caption(f"🔢 Progress Type: Numeric (target: {target:,.1f})")
+                                    new_progress = st.number_input(
+                                        "Current Value",
+                                        min_value=0.0,
+                                        value=float(current),
+                                        step=1.0,
+                                        key=f"progress_{init['id']}",
+                                        help="Enter the current value achieved"
+                                    )
+                            
+                            with col2:
+                                new_status = st.selectbox(
+                                    "Update Status",
+                                    ["Planned", "In Progress", "Completed", "On Hold", "Cancelled"],
+                                    index=["Planned", "In Progress", "Completed", "On Hold", "Cancelled"].index(init['status']),
+                                    key=f"status_{init['id']}"
+                                )
+                            
+                            with col3:
+                                # Show what the new percentage will be
+                                if progress_type == 'percentage':
+                                    new_pct = new_progress
+                                elif progress_type == 'checklist' and target > 0:
+                                    new_pct = (new_progress / target) * 100
+                                elif progress_type == 'numeric' and target > 0:
+                                    new_pct = (new_progress / target) * 100
+                                else:
+                                    new_pct = 0
+                                
+                                st.metric("Completion", f"{new_pct:.1f}%")
+                                
+                                # Auto-suggest completion if progress is 100%
+                                if new_pct >= 100 and new_status != "Completed":
+                                    st.success("💡 Ready to mark as Completed!")
+                            
+                            progress_notes = st.text_area(
+                                "📝 What progress was made?",
+                                placeholder="Describe accomplishments, challenges, next steps, or any updates...",
+                                key=f"notes_{init['id']}",
+                                height=100,
+                                help="Document what was accomplished since the last update"
+                            )
+                            
+                            col1, col2 = st.columns(2)
+                            with col1:
+                                update_submitted = st.form_submit_button("✅ Update Progress", type="primary", use_container_width=True)
+                            with col2:
+                                delete_submitted = st.form_submit_button("🗑️ Delete Initiative", type="secondary", use_container_width=True)
+                            
+                            if update_submitted:
+                                db = get_database()
+                                try:
+                                    update_query = """
+                                        UPDATE reduction_initiatives
+                                        SET current_progress = %s,
+                                            status = %s,
+                                            progress_notes = %s,
+                                            last_progress_update = NOW()
+                                        WHERE id = %s
+                                    """
+                                    if db.execute_query(update_query, (new_progress, new_status, progress_notes, init['id'])):
+                                        clear_reduction_initiatives_cache()
+                                        st.success("✅ Progress updated successfully!")
+                                        st.rerun()
+                                    else:
+                                        st.error("❌ Failed to update progress")
+                                except Exception as e:
+                                    st.error(f"❌ Error: {str(e)}")
+                            
+                            if delete_submitted:
+                                db = get_database()
+                                try:
+                                    delete_query = "DELETE FROM reduction_initiatives WHERE id = %s"
+                                    if db.execute_query(delete_query, (init['id'],)):
+                                        clear_reduction_initiatives_cache()
+                                        st.success("Initiative deleted")
+                                        st.rerun()
+                                except Exception as e:
+                                    st.error(f"❌ Error deleting: {str(e)}")
 
 # ============================================================================
 # SECTION 4: Year-over-Year Comparison (INITIATIVES & EMISSIONS)
@@ -706,5 +1035,3 @@ elif page_section == "📈 Year-over-Year":
     else:
         st.info("⏳ Need at least 2 years of emissions data for year-over-year comparison")
         st.markdown("Keep logging emissions to see annual trends!")
-
-
