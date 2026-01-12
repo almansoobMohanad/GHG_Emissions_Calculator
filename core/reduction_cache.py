@@ -102,14 +102,15 @@ def get_reduction_initiatives(
     
     return [{
         'id': r[0], 'company_id': r[1], 'initiative_name': r[2],
-        'description': r[3], 'target_scopes': r[4], 'expected_reduction': float(r[5]),
-        'actual_reduction': float(r[6]) if r[6] else None, 
-        'estimated_cost': float(r[7]) if r[7] else None,
-        'actual_cost': float(r[8]) if r[8] else None, 'status': r[9],
-        'start_date': r[10], 'target_completion_date': r[11],
-        'actual_completion_date': r[12], 'responsible_person': r[13],
-        'created_by': r[14], 'created_at': r[15], 'updated_at': r[16],
-        'created_by_name': r[17]
+        'description': r[3], 'target_goal': r[4], 'target_scopes': r[5],
+        'expected_reduction': float(r[6]) if r[6] else None,
+        'actual_reduction': float(r[7]) if r[7] else None, 
+        'estimated_cost': float(r[8]) if r[8] else None,
+        'actual_cost': float(r[9]) if r[9] else None, 'status': r[10],
+        'start_date': r[11], 'target_completion_date': r[12],
+        'actual_completion_date': r[13], 'responsible_person': r[14],
+        'created_by': r[15], 'created_at': r[16], 'updated_at': r[17],
+        'created_by_name': r[18]
     } for r in results]
 
 
