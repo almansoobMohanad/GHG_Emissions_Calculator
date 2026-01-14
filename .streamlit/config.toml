@@ -4,6 +4,12 @@ port = 8501
 enableCORS = true
 enableXsrfProtection = true
 
+[logger]
+level = "info"
+
+[client]
+showErrorDetails = true
+
 [theme]
 base = "dark"
 primaryColor = "#4fd1c5"
