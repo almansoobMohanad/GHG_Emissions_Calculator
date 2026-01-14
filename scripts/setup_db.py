@@ -65,23 +65,6 @@ class DatabaseSetup:
         print("\n📋 Creating tables...")
         
         tables = {
-            'users': """
-                CREATE TABLE IF NOT EXISTS users (
-                    id INT AUTO_INCREMENT PRIMARY KEY,
-                    username VARCHAR(100) UNIQUE NOT NULL,
-                    email VARCHAR(255) UNIQUE NOT NULL,
-                    password_hash VARCHAR(255) NOT NULL,
-                    role ENUM('admin', 'manager', 'normal_user') DEFAULT 'normal_user',
-                    company_id INT NULL,
-                    is_active BOOLEAN DEFAULT TRUE,
-                    last_login DATETIME NULL,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                    INDEX idx_users_company (company_id),
-                    INDEX idx_users_email (email)
-                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-            """,
-            
             'companies': """
                 CREATE TABLE IF NOT EXISTS companies (
                     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -101,6 +84,24 @@ class DatabaseSetup:
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
             """,
             
+            'users': """
+                CREATE TABLE IF NOT EXISTS users (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    username VARCHAR(100) UNIQUE NOT NULL,
+                    email VARCHAR(255) UNIQUE NOT NULL,
+                    password_hash VARCHAR(255) NOT NULL,
+                    role ENUM('admin', 'manager', 'normal_user') DEFAULT 'normal_user',
+                    company_id INT NULL,
+                    is_active BOOLEAN DEFAULT TRUE,
+                    last_login DATETIME NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    INDEX idx_users_company (company_id),
+                    INDEX idx_users_email (email),
+                    CONSTRAINT fk_users_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE SET NULL
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+            """,
+            
             'ghg_scopes': """
                 CREATE TABLE IF NOT EXISTS ghg_scopes (
                     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -116,7 +117,7 @@ class DatabaseSetup:
                 CREATE TABLE IF NOT EXISTS ghg_categories (
                     id INT AUTO_INCREMENT PRIMARY KEY,
                     scope_id INT NOT NULL,
-                    category_code VARCHAR(50) UNIQUE NOT NULL,
+                    category_code VARCHAR(50) UNIQUE NULL,
                     category_name VARCHAR(200) NOT NULL,
                     description TEXT NULL,
                     is_active BOOLEAN DEFAULT TRUE,
@@ -132,7 +133,7 @@ class DatabaseSetup:
                 CREATE TABLE IF NOT EXISTS ghg_emission_sources (
                     id INT AUTO_INCREMENT PRIMARY KEY,
                     category_id INT NOT NULL,
-                    source_code VARCHAR(50) UNIQUE NOT NULL,
+                    source_code VARCHAR(50) UNIQUE NULL,
                     source_name VARCHAR(200) NOT NULL,
                     emission_factor DECIMAL(15,8) NOT NULL,
                     unit VARCHAR(50) NOT NULL,
@@ -140,20 +141,22 @@ class DatabaseSetup:
                     region VARCHAR(50) DEFAULT 'UK',
                     source_reference VARCHAR(255) NULL,
                     is_active BOOLEAN DEFAULT TRUE,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                     source_type ENUM('system', 'custom') DEFAULT 'system',
                     company_id INT NULL,
                     is_visible_in_ui BOOLEAN DEFAULT TRUE,
                     data_source_reference VARCHAR(500) NULL,
                     version INT DEFAULT 1,
                     superseded_by INT NULL,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    reference_year INT NULL COMMENT 'Year of the emission factor reference/publication',
                     FOREIGN KEY (category_id) REFERENCES ghg_categories(id) ON DELETE RESTRICT,
                     FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE,
                     FOREIGN KEY (superseded_by) REFERENCES ghg_emission_sources(id) ON DELETE SET NULL,
                     INDEX idx_sources_category (category_id),
                     INDEX idx_sources_code (source_code),
-                    INDEX idx_sources_active (is_active)
+                    INDEX idx_sources_active (is_active),
+                    INDEX idx_reference_year (reference_year)
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
             """,
             
@@ -169,7 +172,7 @@ class DatabaseSetup:
                     co2_equivalent DECIMAL(15,4) NOT NULL,
                     data_source VARCHAR(255) NULL,
                     calculation_method VARCHAR(100) NULL,
-                    verification_status ENUM('unverified', 'verified', 'rejected') DEFAULT 'unverified',
+                    verification_status ENUM('unverified', 'verified', 'rejected') NOT NULL DEFAULT 'unverified',
                     verified_by INT NULL,
                     verified_at DATETIME NULL,
                     notes TEXT NULL,
@@ -243,10 +246,97 @@ class DatabaseSetup:
                     INDEX idx_source (source_id),
                     INDEX idx_changed_at (changed_at)
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+            """,
+            
+            'reduction_goals': """
+                CREATE TABLE IF NOT EXISTS reduction_goals (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    company_id INT NOT NULL,
+                    baseline_year INT NOT NULL,
+                    baseline_emissions DECIMAL(15,2) NOT NULL COMMENT 'Baseline emissions in tonnes CO2e',
+                    target_year INT NOT NULL,
+                    target_reduction_percentage DECIMAL(5,2) NOT NULL COMMENT 'Target reduction percentage',
+                    framework VARCHAR(100) NULL COMMENT 'e.g., SBTi, Net Zero, Paris Agreement',
+                    description TEXT COMMENT 'Additional details about the goal',
+                    status ENUM('active', 'inactive', 'achieved') DEFAULT 'active',
+                    created_by INT NULL COMMENT 'User ID who created this goal',
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE,
+                    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL,
+                    INDEX idx_company_status (company_id, status),
+                    INDEX idx_target_year (target_year)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Company emission reduction goals'
+            """,
+            
+            'reduction_initiatives': """
+                CREATE TABLE IF NOT EXISTS reduction_initiatives (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    company_id INT NOT NULL,
+                    initiative_name VARCHAR(255) NOT NULL,
+                    description TEXT COMMENT 'Detailed description and implementation plan',
+                    target_goal TEXT,
+                    target_scopes VARCHAR(100) NULL COMMENT 'Comma-separated scopes (e.g., Scope 1,Scope 2)',
+                    expected_reduction DECIMAL(15,2) NULL COMMENT 'Expected annual CO2e reduction in tonnes',
+                    actual_reduction DECIMAL(15,2) NULL COMMENT 'Actual achieved reduction in tonnes',
+                    estimated_cost DECIMAL(15,2) NULL COMMENT 'Estimated implementation cost',
+                    actual_cost DECIMAL(15,2) NULL COMMENT 'Actual cost incurred',
+                    status ENUM('Planned', 'In Progress', 'Completed', 'On Hold', 'Cancelled') DEFAULT 'Planned',
+                    start_date DATE NULL COMMENT 'Initiative start date',
+                    target_completion_date DATE NULL COMMENT 'Target completion date',
+                    actual_completion_date DATE NULL COMMENT 'Actual completion date',
+                    responsible_person VARCHAR(255) NULL COMMENT 'Person or department responsible',
+                    created_by INT NULL COMMENT 'User ID who created this initiative',
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    progress_type VARCHAR(50) DEFAULT 'percentage' COMMENT 'Type of progress tracking: percentage, checklist, or numeric',
+                    target_value DECIMAL(10,2) NULL COMMENT 'Target value for numeric or checklist progress (e.g., 100 for percentage, 10 for checklist items)',
+                    current_progress DECIMAL(10,2) DEFAULT 0.00 COMMENT 'Current progress value (percentage, items completed, or custom metric)',
+                    progress_notes TEXT COMMENT 'Notes about recent progress updates',
+                    last_progress_update TIMESTAMP NULL COMMENT 'Timestamp of last progress update',
+                    FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE,
+                    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL,
+                    INDEX idx_company_status (company_id, status),
+                    INDEX idx_dates (start_date, target_completion_date)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Emission reduction initiatives and action plans'
+            """,
+            
+            'initiative_progress': """
+                CREATE TABLE IF NOT EXISTS initiative_progress (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    initiative_id INT NOT NULL,
+                    progress_date DATE NOT NULL,
+                    progress_percentage INT NULL COMMENT 'Completion percentage (0-100)',
+                    notes TEXT COMMENT 'Progress update notes',
+                    actual_reduction_to_date DECIMAL(15,2) NULL COMMENT 'Cumulative reduction achieved',
+                    cost_to_date DECIMAL(15,2) NULL COMMENT 'Cumulative cost incurred',
+                    created_by INT NULL COMMENT 'User ID who logged this update',
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (initiative_id) REFERENCES reduction_initiatives(id) ON DELETE CASCADE,
+                    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL,
+                    INDEX idx_initiative_date (initiative_id, progress_date)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Progress tracking for reduction initiatives'
+            """,
+            
+            'initiative_documents': """
+                CREATE TABLE IF NOT EXISTS initiative_documents (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    initiative_id INT NOT NULL,
+                    document_name VARCHAR(255) NOT NULL,
+                    document_type VARCHAR(50) NULL COMMENT 'e.g., Invoice, Certificate, Report',
+                    file_path VARCHAR(500) NULL COMMENT 'Path to stored file',
+                    file_url VARCHAR(500) NULL COMMENT 'URL if stored externally',
+                    description TEXT,
+                    uploaded_by INT NULL,
+                    uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (initiative_id) REFERENCES reduction_initiatives(id) ON DELETE CASCADE,
+                    FOREIGN KEY (uploaded_by) REFERENCES users(id) ON DELETE SET NULL,
+                    INDEX idx_initiative (initiative_id)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Supporting documents for initiatives'
             """
         }
         
-        # Create tables in order
+        # Create tables in dependency order
         for table_name, table_query in tables.items():
             print(f"  Creating table: {table_name}...", end=" ")
             if self.execute_query(table_query):
@@ -254,36 +344,6 @@ class DatabaseSetup:
             else:
                 print("❌")
                 return False
-        
-        # Add foreign key for users.company_id (after companies table exists)
-        print("  Adding foreign key constraints...", end=" ")
-        
-        # Check if constraint already exists
-        check_fk_query = """
-            SELECT COUNT(*) as cnt FROM information_schema.TABLE_CONSTRAINTS 
-            WHERE CONSTRAINT_SCHEMA = %s 
-            AND TABLE_NAME = 'users' 
-            AND CONSTRAINT_NAME = 'fk_users_company'
-        """
-        cursor = self.connection.cursor(dictionary=True)
-        cursor.execute(check_fk_query, (self.db_name,))
-        result = cursor.fetchone()
-        cursor.close()
-        
-        if result['cnt'] == 0:
-            # Constraint doesn't exist, add it
-            fk_query = """
-                ALTER TABLE users 
-                ADD CONSTRAINT fk_users_company 
-                FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE SET NULL
-            """
-            if self.execute_query(fk_query):
-                print("✅")
-            else:
-                print("❌")
-                return False
-        else:
-            print("⏭️  (already exists)")
         
         return True
     
@@ -332,17 +392,17 @@ class DatabaseSetup:
         print("  Inserting emission sources...", end=" ")
         sources_query = """
             INSERT IGNORE INTO ghg_emission_sources 
-            (category_id, source_code, source_name, emission_factor, unit, description, region) VALUES
+            (category_id, source_code, source_name, emission_factor, unit, description, region, reference_year) VALUES
             -- Stationary Combustion (S1-01)
-            ((SELECT id FROM ghg_categories WHERE category_code = 'S1-01'), 'S1-01-01', 'Natural Gas', 0.18385000, 'kg CO2e/kWh', 'Natural gas combustion in boilers and furnaces', 'UK'),
-            ((SELECT id FROM ghg_categories WHERE category_code = 'S1-01'), 'S1-01-02', 'Coal', 0.34224000, 'kg CO2e/kWh', 'Coal combustion in power generation', 'UK'),
-            ((SELECT id FROM ghg_categories WHERE category_code = 'S1-01'), 'S1-01-03', 'LPG', 0.21449000, 'kg CO2e/litre', 'LPG combustion', 'UK'),
+            ((SELECT id FROM ghg_categories WHERE category_code = 'S1-01'), 'S1-01-01', 'Natural Gas', 0.18385000, 'kg CO2e/kWh', 'Natural gas combustion in boilers and furnaces', 'UK', 2024),
+            ((SELECT id FROM ghg_categories WHERE category_code = 'S1-01'), 'S1-01-02', 'Coal', 0.34224000, 'kg CO2e/kWh', 'Coal combustion in power generation', 'UK', 2024),
+            ((SELECT id FROM ghg_categories WHERE category_code = 'S1-01'), 'S1-01-03', 'LPG', 0.21449000, 'kg CO2e/litre', 'LPG combustion', 'UK', 2024),
             -- Mobile Combustion (S1-02)
-            ((SELECT id FROM ghg_categories WHERE category_code = 'S1-02'), 'S1-02-01', 'Petrol Cars', 0.16743000, 'kg CO2e/litre', 'Petrol vehicles', 'UK'),
-            ((SELECT id FROM ghg_categories WHERE category_code = 'S1-02'), 'S1-02-02', 'Diesel Cars', 0.16901000, 'kg CO2e/litre', 'Diesel vehicles', 'UK'),
+            ((SELECT id FROM ghg_categories WHERE category_code = 'S1-02'), 'S1-02-01', 'Petrol Cars', 0.16743000, 'kg CO2e/litre', 'Petrol vehicles', 'UK', 2024),
+            ((SELECT id FROM ghg_categories WHERE category_code = 'S1-02'), 'S1-02-02', 'Diesel Cars', 0.16901000, 'kg CO2e/litre', 'Diesel vehicles', 'UK', 2024),
             -- Purchased Electricity (S2-01)
-            ((SELECT id FROM ghg_categories WHERE category_code = 'S2-01'), 'S2-01-01', 'Grid Electricity (UK)', 0.19338000, 'kg CO2e/kWh', 'UK national grid electricity', 'UK'),
-            ((SELECT id FROM ghg_categories WHERE category_code = 'S2-01'), 'S2-01-02', 'Renewable Electricity', 0.00000000, 'kg CO2e/kWh', 'Certified renewable electricity', 'UK')
+            ((SELECT id FROM ghg_categories WHERE category_code = 'S2-01'), 'S2-01-01', 'Grid Electricity (UK)', 0.19338000, 'kg CO2e/kWh', 'UK national grid electricity', 'UK', 2024),
+            ((SELECT id FROM ghg_categories WHERE category_code = 'S2-01'), 'S2-01-02', 'Renewable Electricity', 0.00000000, 'kg CO2e/kWh', 'Certified renewable electricity', 'UK', 2024)
         """
         if self.execute_query(sources_query):
             print("✅")
@@ -433,6 +493,12 @@ class DatabaseSetup:
             print("  1. Run: streamlit run app/main.py")
             print("  2. Login with: admin / admin123")
             print("  3. Change admin password immediately!")
+            print("\n📊 Database includes:")
+            print("  - 13 tables created")
+            print("  - GHG Scopes (1, 2, 3)")
+            print("  - Sample emission categories and sources")
+            print("  - Reduction goals and initiatives tracking")
+            print("  - Document management system")
             print("\n")
             
             return True
