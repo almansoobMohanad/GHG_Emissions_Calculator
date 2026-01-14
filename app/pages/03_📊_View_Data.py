@@ -36,7 +36,7 @@ if status == 'no_company':
     st.stop()
 
 # Filters
-col1, col2, col3 = st.columns(3)
+col1, col2, col3, col4 = st.columns(4)
 with col1:
     filter_period = st.selectbox(
         "Reporting Period", 
@@ -87,6 +87,11 @@ else:
         st.metric("Scope 3", f"{scope_totals.get('Scope 3', 0):,.2f} kg")
     
     st.divider()
+    
+    if st.button("🔄 Refresh Data", use_container_width=False, help="Refresh to get latest data"):
+        st.cache_data.clear()
+        st.rerun()
+    
     st.subheader("Emissions Records")
     
     # Create DataFrame for table display

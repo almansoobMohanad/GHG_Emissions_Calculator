@@ -62,6 +62,11 @@ if not unverified:
 
 # Display unverified emissions
 st.subheader("📋 Unverified Emissions")
+
+if st.button("🔄 Refresh Unverified Data", use_container_width=False, help="Refresh to get latest unverified emissions"):
+    st.cache_data.clear()
+    st.rerun()
+
 st.caption(f"Showing {len(unverified)} unverified entries")
 
 # Show each unverified emission in an expander

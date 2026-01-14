@@ -116,6 +116,10 @@ st.divider()
 # ============================================================================
 st.header("📥 Requests to My Department")
 
+if st.button("🔄 Refresh Requests", use_container_width=False, help="Refresh to get latest incoming requests"):
+    st.cache_data.clear()
+    st.rerun()
+
 incoming_requests = get_incoming_requests(st.session_state.company_id)
 
 if not incoming_requests:
