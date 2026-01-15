@@ -83,7 +83,7 @@ with st.form("request_form"):
         with col2:
             document_type = st.selectbox(
                 "Document Type *",
-                options=["SEDG Report", "i-ESG Questionnaire"],
+                options=["SEDG Disclosure", "ESG Questionnaire", "COSIRI Certification", "Other"],
                 help="Select the type of document you need"
             )
         
