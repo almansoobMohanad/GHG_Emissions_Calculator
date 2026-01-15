@@ -9,6 +9,8 @@ level = "info"
 
 [client]
 showErrorDetails = true
+toolbarMode = "viewer"
+
 
 [theme]
 base = "dark"
