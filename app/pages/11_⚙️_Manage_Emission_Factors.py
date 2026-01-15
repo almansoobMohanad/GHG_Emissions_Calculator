@@ -235,6 +235,7 @@ if st.session_state.show_add_dialog:
             st.session_state.add_form_data['custom_unit'] = custom_unit
             final_unit = f"kg CO2e/{custom_unit}" if custom_unit else ""
         else:
+            custom_unit = ""  # Initialize for non-custom units
             final_unit = unit_selection
     
     with col2:
@@ -307,6 +308,8 @@ if st.session_state.show_add_dialog:
                             # Clear form data
                             del st.session_state.add_form_data
                             st.session_state.show_add_dialog = False
+                            # Clear cache to show new source immediately
+                            clear_all_source_caches()
                             st.rerun()
                         else:
                             st.error("❌ Failed to create source. Please try again.")
@@ -336,6 +339,8 @@ if st.session_state.show_add_dialog:
                         # Clear form data
                         del st.session_state.add_form_data
                         st.session_state.show_add_dialog = False
+                        # Clear cache to show new source immediately
+                        clear_all_source_caches()
                         st.rerun()
                     else:
                         st.error("❌ Failed to create source. Please try again.")
@@ -513,6 +518,7 @@ if len(filtered_sources) > 0:
                                     success, msg = delete_custom_source(source['id'])
                                     if success:
                                         st.success(msg)
+                                        clear_all_source_caches()
                                         st.rerun()
                                     else:
                                         st.error(msg)
@@ -694,6 +700,8 @@ if st.session_state.edit_source_id:
                                 if 'edit_form_data' in st.session_state:
                                     del st.session_state.edit_form_data
                                 st.session_state.edit_source_id = None
+                                # Clear cache to show updated source immediately
+                                clear_all_source_caches()
                                 st.rerun()
                             else:
                                 st.error("❌ Failed to update source.")
@@ -721,6 +729,8 @@ if st.session_state.edit_source_id:
                             if 'edit_form_data' in st.session_state:
                                 del st.session_state.edit_form_data
                             st.session_state.edit_source_id = None
+                            # Clear cache to show updated source immediately
+                            clear_all_source_caches()
                             st.rerun()
                         else:
                             st.error("❌ Failed to update source.")
