@@ -28,6 +28,7 @@ from core.emission_factors import (
 )
 
 from components.company_verification import enforce_company_verification
+from components.bulk_custom_sources_upload import render_bulk_custom_sources_upload
 
 # Check permissions
 check_page_permission('11_⚙️_Manage_Emission_Factors.py')
@@ -354,6 +355,13 @@ if st.session_state.show_add_dialog:
             st.rerun()
     
     st.divider()
+
+# ============================================================================
+# BULK UPLOAD CUSTOM SOURCES
+# ============================================================================
+render_bulk_custom_sources_upload(categories)
+
+st.divider()
 
 # ============================================================================
 # FILTER LOGIC
