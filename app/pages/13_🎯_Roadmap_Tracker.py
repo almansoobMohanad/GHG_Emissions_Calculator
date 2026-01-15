@@ -493,7 +493,9 @@ elif page_section == "💡 Action Plans":
     
     st.divider()
     
-    # Show the appropriate subsection
+    # ========================================================================
+    # SUB-SECTION 1: ADD INITIATIVE (REDESIGNED - NO FORM)
+    # ========================================================================
     if st.session_state.action_plans_subsection == "➕ Add Initiative":
         st.subheader("Create New Initiative")
         
@@ -501,126 +503,229 @@ elif page_section == "💡 Action Plans":
         if user_role not in ['manager', 'admin']:
             st.warning("⚠️ Only managers and administrators can create initiatives.")
         else:
-            with st.form("new_initiative_form"):
-                initiative_name = st.text_input(
-                    "Initiative Name *",
-                    placeholder="e.g., Install Solar Panels, Switch to EV Fleet",
-                    help="Give your initiative a clear, descriptive name"
+            # Initialize session state for form data if not exists
+            if 'new_initiative_data' not in st.session_state:
+                st.session_state.new_initiative_data = {
+                    'initiative_name': '',
+                    'target_goal': '',
+                    'estimated_cost': 0.0,
+                    'start_date': datetime.now().date(),
+                    'status': 'Planned',
+                    'target_completion': datetime.now().date(),
+                    'description': '',
+                    'responsible_person': '',
+                    'progress_type': 'percentage',
+                    'target_value': 100.0,
+                    'initial_progress': 0.0
+                }
+            
+            # Basic Information Section
+            st.markdown("### 📋 Basic Information")
+            
+            initiative_name = st.text_input(
+                "Initiative Name *",
+                value=st.session_state.new_initiative_data['initiative_name'],
+                placeholder="e.g., Install Solar Panels, Switch to EV Fleet",
+                help="Give your initiative a clear, descriptive name",
+                key="init_name"
+            )
+            
+            target_goal = st.text_input(
+                "Target / Goal (optional)",
+                value=st.session_state.new_initiative_data['target_goal'],
+                placeholder="e.g., Reduce grid electricity use by 15% or Achieve ISO 14001 certification",
+                help="Briefly describe the intended outcome or goal of this initiative",
+                key="init_target"
+            )
+            
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                estimated_cost = st.number_input(
+                    "Estimated Cost ($)",
+                    min_value=0.0,
+                    step=100.0,
+                    value=st.session_state.new_initiative_data['estimated_cost'],
+                    help="Total implementation cost (optional)",
+                    key="init_cost"
                 )
-                
-                target_goal = st.text_input(
-                    "Target / Goal (optional)",
-                    placeholder="e.g., Reduce grid electricity use by 15% or Achieve ISO 14001 certification",
-                    help="Briefly describe the intended outcome or goal of this initiative"
-                )
-                
-                col1, col2 = st.columns(2)
-                
-                with col1:
-                    estimated_cost = st.number_input(
-                        "Estimated Cost ($)",
-                        min_value=0.0,
-                        step=100.0,
-                        help="Total implementation cost (optional)"
-                    )
 
-                    start_date = st.date_input(
-                        "Start Date",
-                        help="When will/did this initiative start?"
-                    )
+                start_date = st.date_input(
+                    "Start Date",
+                    value=st.session_state.new_initiative_data['start_date'],
+                    help="When will/did this initiative start?",
+                    key="init_start"
+                )
+            
+            with col2:
+                status = st.selectbox(
+                    "Status *",
+                    ["Planned", "In Progress", "Completed", "On Hold", "Cancelled"],
+                    index=["Planned", "In Progress", "Completed", "On Hold", "Cancelled"].index(
+                        st.session_state.new_initiative_data['status']
+                    ),
+                    help="Current status of this initiative",
+                    key="init_status"
+                )
                 
-                with col2:
-                    status = st.selectbox(
-                        "Status *",
-                        ["Planned", "In Progress", "Completed", "On Hold", "Cancelled"],
-                        help="Current status of this initiative"
+                target_completion = st.date_input(
+                    "Target Completion Date",
+                    value=st.session_state.new_initiative_data['target_completion'],
+                    help="When should this be completed?",
+                    key="init_completion"
+                )
+            
+            description = st.text_area(
+                "Description & Implementation Plan",
+                value=st.session_state.new_initiative_data['description'],
+                placeholder="Describe the initiative, implementation steps, and expected outcomes...",
+                height=150,
+                key="init_desc"
+            )
+            
+            responsible_person = st.text_input(
+                "Responsible Person/Department",
+                value=st.session_state.new_initiative_data['responsible_person'],
+                placeholder="Who is leading this initiative?",
+                key="init_responsible"
+            )
+            
+            st.divider()
+            
+            # Progress Tracking Setup Section
+            st.markdown("### 📊 Progress Tracking Setup")
+            st.info("💡 Choose how you want to track progress for this initiative")
+            
+            # Progress Type Selection (updates immediately!)
+            progress_type = st.selectbox(
+                "Progress Tracking Method *",
+                ["percentage", "checklist", "numeric"],
+                format_func=lambda x: {
+                    "percentage": "📊 Percentage (0-100%)",
+                    "checklist": "☑️ Checklist (track items to complete)",
+                    "numeric": "🔢 Numeric Target (custom metric like kWh, trees, etc.)"
+                }[x],
+                index=["percentage", "checklist", "numeric"].index(
+                    st.session_state.new_initiative_data['progress_type']
+                ),
+                help="How do you want to track progress?",
+                key="init_progress_type"
+            )
+            
+            # Update session state
+            st.session_state.new_initiative_data['progress_type'] = progress_type
+            
+            # Dynamic inputs based on progress type (appears IMMEDIATELY)
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                if progress_type == "percentage":
+                    st.success("📊 **Percentage Tracking**")
+                    st.caption("Track completion as a percentage from 0% to 100%")
+                    target_value = 100.0
+                    st.info(f"✓ Target automatically set to **100%**")
+                    
+                elif progress_type == "checklist":
+                    st.success("☑️ **Checklist Tracking**")
+                    st.caption("Track completion by checking off items/tasks")
+                    target_value = st.number_input(
+                        "Total Number of Items/Tasks *",
+                        min_value=1.0,
+                        value=st.session_state.new_initiative_data.get('target_value', 10.0) if st.session_state.new_initiative_data['progress_type'] == 'checklist' else 10.0,
+                        step=1.0,
+                        help="How many items/tasks need to be completed?",
+                        key="init_checklist_total"
+                    )
+                    st.caption(f"📋 Example: Installing {int(target_value)} solar panels, completing {int(target_value)} training sessions")
+                    
+                else:  # numeric
+                    st.success("🔢 **Numeric Target Tracking**")
+                    st.caption("Track progress toward a custom numeric goal")
+                    target_value = st.number_input(
+                        "Target Value *",
+                        min_value=0.0,
+                        value=st.session_state.new_initiative_data.get('target_value', 100.0) if st.session_state.new_initiative_data['progress_type'] == 'numeric' else 100.0,
+                        step=1.0,
+                        help="What's your target number?",
+                        key="init_numeric_target"
                     )
                     
-                    target_completion = st.date_input(
-                        "Target Completion Date",
-                        help="When should this be completed?"
+                    unit_hint = st.text_input(
+                        "Unit/Metric Name (optional)",
+                        placeholder="e.g., kWh saved, trees planted, tons recycled",
+                        help="What unit are you measuring? (for display purposes only)",
+                        key="init_unit_hint"
                     )
+                    if unit_hint:
+                        st.caption(f"📊 Goal: Reach **{target_value:,.0f} {unit_hint}**")
+            
+            with col2:
+                st.markdown("**Set Initial Progress**")
                 
-                description = st.text_area(
-                    "Description & Implementation Plan",
-                    placeholder="Describe the initiative, implementation steps, and expected outcomes...",
-                    height=150
-                )
-                
-                responsible_person = st.text_input(
-                    "Responsible Person/Department",
-                    placeholder="Who is leading this initiative?"
-                )
-                
-                st.divider()
-                st.markdown("### 📊 Progress Tracking Setup")
-                
-                col1, col2, col3 = st.columns(3)
-                
-                with col1:
-                    progress_type = st.selectbox(
-                        "Progress Type *",
-                        ["percentage", "checklist", "numeric"],
-                        format_func=lambda x: {
-                            "percentage": "📊 Percentage (0-100%)",
-                            "checklist": "☑️ Checklist (items to complete)",
-                            "numeric": "🔢 Numeric Target (custom metric)"
-                        }[x],
-                        help="How do you want to track progress?"
+                if progress_type == "percentage":
+                    initial_progress = st.slider(
+                        "Initial Progress (%)",
+                        min_value=0.0,
+                        max_value=100.0,
+                        value=st.session_state.new_initiative_data.get('initial_progress', 0.0) if st.session_state.new_initiative_data['progress_type'] == 'percentage' else 0.0,
+                        step=5.0,
+                        help="How much is already completed?",
+                        key="init_progress_pct"
                     )
-                
-                with col2:
-                    if progress_type == "percentage":
-                        target_value = 100.0
-                        st.info("Target: 100%")
-                    elif progress_type == "checklist":
-                        target_value = st.number_input(
-                            "Total Items/Tasks *",
-                            min_value=1.0,
-                            value=10.0,
-                            step=1.0,
-                            help="How many items need to be completed?"
-                        )
-                    else:  # numeric
-                        target_value = st.number_input(
-                            "Target Value *",
-                            min_value=0.0,
-                            value=100.0,
-                            step=1.0,
-                            help="What's your target number?"
-                        )
-                
-                with col3:
-                    if progress_type == "percentage":
-                        initial_progress = st.number_input(
-                            "Initial Progress (%)",
-                            min_value=0.0,
-                            max_value=100.0,
-                            value=0.0,
-                            step=1.0
-                        )
-                    elif progress_type == "checklist":
-                        initial_progress = st.number_input(
-                            "Items Already Completed",
-                            min_value=0.0,
-                            max_value=target_value,
-                            value=0.0,
-                            step=1.0
-                        )
-                    else:  # numeric
-                        initial_progress = st.number_input(
-                            "Current Value",
-                            min_value=0.0,
-                            max_value=target_value,
-                            value=0.0,
-                            step=1.0
-                        )
-                
-                submitted = st.form_submit_button("💾 Save Initiative", type="primary", use_container_width=True)
-                
-                if submitted:
+                    st.progress(initial_progress / 100)
+                    st.caption(f"Starting at {initial_progress:.0f}% complete")
+                    
+                elif progress_type == "checklist":
+                    initial_progress = st.number_input(
+                        "Items Already Completed",
+                        min_value=0.0,
+                        max_value=target_value,
+                        value=min(st.session_state.new_initiative_data.get('initial_progress', 0.0), target_value) if st.session_state.new_initiative_data['progress_type'] == 'checklist' else 0.0,
+                        step=1.0,
+                        help=f"How many out of {int(target_value)} items are done?",
+                        key="init_progress_checklist"
+                    )
+                    progress_pct = (initial_progress / target_value * 100) if target_value > 0 else 0
+                    st.progress(progress_pct / 100)
+                    st.caption(f"✓ {int(initial_progress)} of {int(target_value)} items completed ({progress_pct:.0f}%)")
+                    
+                else:  # numeric
+                    initial_progress = st.number_input(
+                        "Current Value",
+                        min_value=0.0,
+                        max_value=target_value,
+                        value=min(st.session_state.new_initiative_data.get('initial_progress', 0.0), target_value) if st.session_state.new_initiative_data['progress_type'] == 'numeric' else 0.0,
+                        step=1.0,
+                        help=f"Current progress towards {target_value:,.0f}",
+                        key="init_progress_numeric"
+                    )
+                    progress_pct = (initial_progress / target_value * 100) if target_value > 0 else 0
+                    st.progress(progress_pct / 100)
+                    st.caption(f"📊 {initial_progress:,.0f} of {target_value:,.0f} achieved ({progress_pct:.0f}%)")
+            
+            # Update session state with current values
+            st.session_state.new_initiative_data.update({
+                'initiative_name': initiative_name,
+                'target_goal': target_goal,
+                'estimated_cost': estimated_cost,
+                'start_date': start_date,
+                'status': status,
+                'target_completion': target_completion,
+                'description': description,
+                'responsible_person': responsible_person,
+                'progress_type': progress_type,
+                'target_value': target_value,
+                'initial_progress': initial_progress
+            })
+            
+            st.divider()
+            
+            # Action Buttons
+            col1, col2, col3 = st.columns([2, 1, 1])
+            with col2:
+                if st.button("💾 Save Initiative", type="primary", use_container_width=True, key="save_initiative"):
                     if not initiative_name:
-                        st.error("Initiative name is required")
+                        st.error("❌ Initiative name is required!")
                     else:
                         db = get_database()
                         
@@ -635,25 +740,48 @@ elif page_section == "💡 Action Plans":
                                 ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                             """
                             success = db.execute_query(insert_query, (
-                                company_id, initiative_name, description,
-                                target_goal, estimated_cost if estimated_cost > 0 else None,
-                                status, start_date, target_completion,
-                                responsible_person, progress_type, target_value,
-                                initial_progress, st.session_state.user_id
+                                company_id, 
+                                initiative_name, 
+                                description,
+                                target_goal, 
+                                estimated_cost if estimated_cost > 0 else None,
+                                status, 
+                                start_date, 
+                                target_completion,
+                                responsible_person, 
+                                progress_type, 
+                                target_value,
+                                initial_progress, 
+                                st.session_state.user_id
                             ))
                             
                             if success:
-                                # IMPORTANT: Clear cache so new initiative loads
+                                # Clear cache and form data
                                 clear_reduction_initiatives_cache()
+                                del st.session_state.new_initiative_data
                                 
                                 st.success("✅ Initiative created successfully!")
                                 st.balloons()
+                                
+                                # Switch to manage tab after creation
+                                st.session_state.action_plans_subsection = "📋 Manage Initiatives"
                                 st.rerun()
                             else:
                                 st.error("❌ Failed to create initiative")
                         except Exception as e:
                             st.error(f"❌ Database error: {str(e)}")
+            
+            with col3:
+                if st.button("❌ Cancel", use_container_width=True, key="cancel_initiative"):
+                    # Clear form data
+                    if 'new_initiative_data' in st.session_state:
+                        del st.session_state.new_initiative_data
+                    st.session_state.action_plans_subsection = "📋 Manage Initiatives"
+                    st.rerun()
     
+    # ========================================================================
+    # SUB-SECTION 2: MANAGE INITIATIVES
+    # ========================================================================
     elif st.session_state.action_plans_subsection == "📋 Manage Initiatives":
         st.subheader("Manage & Update Initiatives")
         
@@ -850,6 +978,15 @@ elif page_section == "💡 Action Plans":
                                         st.rerun()
                                 except Exception as e:
                                     st.error(f"❌ Error deleting: {str(e)}")
+                
+                st.divider()
+        else:
+            st.info("📋 No initiatives found. Create your first initiative!")
+            col1, col2, col3 = st.columns([1, 1, 1])
+            with col2:
+                if st.button("➕ Create Initiative", type="primary", use_container_width=True):
+                    st.session_state.action_plans_subsection = "➕ Add Initiative"
+                    st.rerun()
 
 # ============================================================================
 # SECTION 4: Year-over-Year Comparison (INITIATIVES & EMISSIONS)
