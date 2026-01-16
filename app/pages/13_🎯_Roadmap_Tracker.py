@@ -55,7 +55,7 @@ if 'page_section' not in st.session_state:
 
 # Initialize sub-tab for Action Plans
 if 'action_plans_tab' not in st.session_state:
-    st.session_state.action_plans_tab = 0  # 0 = Add Initiative, 1 = Manage Initiatives
+    st.session_state.action_plans_tab = 0  # 0 = Add Initiative, 1 = View  Initiatives
 
 # Quick navigation buttons at the top
 st.markdown("### Quick Navigation")
@@ -66,8 +66,8 @@ with navigation_cols[0]:
         st.rerun()
 
 with navigation_cols[1]:
-    if st.button("🎯 Reduction Goals", use_container_width=True, type="primary" if st.session_state.page_section == "🎯 Reduction Goals" else "secondary"):
-        st.session_state.page_section = "🎯 Reduction Goals"
+    if st.button("🎯 GHG Reduction Goals", use_container_width=True, type="primary" if st.session_state.page_section == "🎯 Reduction Goals" else "secondary"):
+        st.session_state.page_section = "🎯 GHG Reduction Goals"
         st.rerun()
 
 with navigation_cols[2]:
@@ -221,7 +221,7 @@ if page_section == "📊 Overview":
         with col2:
             if st.button("➕ Update Progress", type="primary", use_container_width=True):
                 st.session_state.page_section = "💡 Action Plans"
-                st.session_state.action_plans_subsection = "📋 Manage Initiatives"
+                st.session_state.action_plans_subsection = "📋 View Initiatives"
                 st.rerun()
         
         st.markdown("---")
@@ -304,7 +304,7 @@ if page_section == "📊 Overview":
             with col2:
                 if st.button("🔄 Update All Progress", type="secondary", use_container_width=True, key="update_all_bottom"):
                     st.session_state.page_section = "💡 Action Plans"
-                    st.session_state.action_plans_subsection = "📋 Manage Initiatives"
+                    st.session_state.action_plans_subsection = "📋 View Initiatives"
                     st.rerun()
         else:
             col1, col2, col3 = st.columns([1, 2, 1])
@@ -322,8 +322,8 @@ if page_section == "📊 Overview":
 # ============================================================================
 # SECTION 2: Reduction Goals Management
 # ============================================================================
-elif page_section == "🎯 Reduction Goals":
-    st.header("🎯 Reduction Goals")
+elif page_section == "🎯 GHG Reduction Goals":
+    st.header("🎯 GHG Reduction Goals")
     
     # Only managers and admins can set goals
     if user_role not in ['manager', 'admin']:
@@ -476,7 +476,7 @@ elif page_section == "💡 Action Plans":
     
     # Use session state to control which sub-section is active
     if 'action_plans_subsection' not in st.session_state:
-        st.session_state.action_plans_subsection = "📋 Manage Initiatives" if st.session_state.get('action_plans_tab', 0) == 1 else "➕ Add Initiative"
+        st.session_state.action_plans_subsection = "📋 View Initiatives" if st.session_state.get('action_plans_tab', 0) == 1 else "➕ Add Initiative"
     
     # Sub-navigation for Action Plans
     subsection_cols = st.columns(2)
@@ -486,9 +486,9 @@ elif page_section == "💡 Action Plans":
             st.session_state.action_plans_subsection = "➕ Add Initiative"
             st.rerun()
     with subsection_cols[1]:
-        if st.button("📋 Manage Initiatives", use_container_width=True,
-                    type="primary" if st.session_state.action_plans_subsection == "📋 Manage Initiatives" else "secondary"):
-            st.session_state.action_plans_subsection = "📋 Manage Initiatives"
+        if st.button("📋 View Initiatives", use_container_width=True,
+                    type="primary" if st.session_state.action_plans_subsection == "📋 View Initiatives" else "secondary"):
+            st.session_state.action_plans_subsection = "📋 View Initiatives"
             st.rerun()
     
     st.divider()
@@ -764,7 +764,7 @@ elif page_section == "💡 Action Plans":
                                 st.balloons()
                                 
                                 # Switch to manage tab after creation
-                                st.session_state.action_plans_subsection = "📋 Manage Initiatives"
+                                st.session_state.action_plans_subsection = "📋 View Initiatives"
                                 st.rerun()
                             else:
                                 st.error("❌ Failed to create initiative")
@@ -776,13 +776,13 @@ elif page_section == "💡 Action Plans":
                     # Clear form data
                     if 'new_initiative_data' in st.session_state:
                         del st.session_state.new_initiative_data
-                    st.session_state.action_plans_subsection = "📋 Manage Initiatives"
+                    st.session_state.action_plans_subsection = "📋 View Initiatives"
                     st.rerun()
     
     # ========================================================================
     # SUB-SECTION 2: MANAGE INITIATIVES
     # ========================================================================
-    elif st.session_state.action_plans_subsection == "📋 Manage Initiatives":
+    elif st.session_state.action_plans_subsection == "📋 View Initiatives":
         st.subheader("Manage & Update Initiatives")
         
         st.info("💡 **Tip:** Expand any initiative below to update its progress, add notes, or change status!")
