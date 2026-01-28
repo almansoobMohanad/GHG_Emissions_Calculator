@@ -18,6 +18,7 @@ PAGE_PERMISSIONS = {
         '09_📝_ESG_Ready_Questionnaire.py',
         '10_📤_Document_Requests.py',  # ✅ Added Document Requests
         '11_⚙️_Manage_Emission_Factors.py',
+        '12_📄_COSIRI.py',
     ],
     'manager': [
         '01_🏠_Dashboard.py',
@@ -28,12 +29,14 @@ PAGE_PERMISSIONS = {
         '09_📝_ESG_Ready_Questionnaire.py',
         '10_📤_Document_Requests.py',  # ✅ Manager can request/share documents
         '11_⚙️_Manage_Emission_Factors.py',
+        '12_📄_COSIRI.py',
     ],
     'normal_user': [
         '01_🏠_Dashboard.py',
         '02_➕_Add_Activity.py',
         '03_📊_View_Data.py',
         '09_📝_ESG_Ready_Questionnaire.py',
+        '12_📄_COSIRI.py',
     ]
 }
 
@@ -52,6 +55,9 @@ FEATURE_PERMISSIONS = {
     'can_export_data': ['admin', 'manager'],
     'can_request_documents': ['admin', 'manager', 'normal_user'],  # ✅ Added document request permission
     'can_share_documents': ['admin', 'manager'],  # ✅ Added document sharing permission
+    'can_upload_cosiri_documents': ['admin', 'manager'],  # ✅ Can upload COSIRI certificates/reports
+    'can_delete_cosiri_documents': ['admin', 'manager'],  # ✅ Can delete COSIRI documents
+    'can_view_cosiri_documents': ['admin', 'manager', 'normal_user'],  # ✅ Can view/download COSIRI documents
 }
 
 # Role hierarchy (higher roles inherit lower role permissions)
