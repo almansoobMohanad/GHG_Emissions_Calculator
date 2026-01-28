@@ -14,6 +14,7 @@ from core.cache import get_database
 from components.company_verification import enforce_company_verification
 from config.constants import REPORTING_PERIODS
 
+
 # Check permissions
 check_page_permission('12_📄_COSIRI.py')
 
@@ -29,7 +30,7 @@ if status == 'no_company':
 with st.sidebar:
     show_permission_badge()
     st.write(f"**User:** {st.session_state.username}")
-    if st.button("🚪 Logout", type="secondary", use_container_width=True):
+    if st.button("🚪 Logout", type="secondary", width='stretch'):
         for key in list(st.session_state.keys()):
             del st.session_state[key]
         st.switch_page("main.py")
@@ -90,7 +91,7 @@ try:
                 help="Supported formats: PDF, Word, Excel, Images"
             )
             
-            submit_upload = st.form_submit_button("📤 Upload Document", type="primary", use_container_width=True)
+            submit_upload = st.form_submit_button("📤 Upload Document", type="primary", width="stretch")
         
         if submit_upload:
             if uploaded_file is None:
@@ -115,7 +116,7 @@ try:
                             st.session_state.user_id,
                             document_type,
                             uploaded_file.name,
-                            None,  # file_path is NULL since we're storing in DB
+                            '',  # file_path is empty since we're storing in DB
                             file_content,
                             uploaded_file.size,
                             uploaded_file.type,
@@ -229,7 +230,7 @@ try:
                             data=doc['file_content'],
                             file_name=doc['file_name'],
                             mime=doc['mime_type'],
-                            use_container_width=True,
+                            width="stretch",
                             key=f"download_{doc['id']}"
                         )
                     else:
@@ -240,7 +241,7 @@ try:
                         if st.button(
                             "🗑️ Delete",
                             type="secondary",
-                            use_container_width=True,
+                            width="stretch",
                             key=f"delete_{doc['id']}"
                         ):
                             # Soft delete (set is_active = 0)
