@@ -9,6 +9,7 @@ __pycache__/
 .env
 .venv/
 venv/
+.codelineignore
 
 # Build / dist
 build/

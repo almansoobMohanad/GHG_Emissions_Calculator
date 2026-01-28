@@ -19,6 +19,7 @@ PAGE_PERMISSIONS = {
         '10_📤_Document_Requests.py',  # ✅ Added Document Requests
         '11_⚙️_Manage_Emission_Factors.py',
         '12_📄_COSIRI.py',
+        '13_🎯_Roadmap_Tracker.py',  # Accessible to all roles
     ],
     'manager': [
         '01_🏠_Dashboard.py',
@@ -30,6 +31,7 @@ PAGE_PERMISSIONS = {
         '10_📤_Document_Requests.py',  # ✅ Manager can request/share documents
         '11_⚙️_Manage_Emission_Factors.py',
         '12_📄_COSIRI.py',
+        '13_🎯_Roadmap_Tracker.py',  # Accessible to all roles
     ],
     'normal_user': [
         '01_🏠_Dashboard.py',
@@ -37,6 +39,7 @@ PAGE_PERMISSIONS = {
         '03_📊_View_Data.py',
         '09_📝_ESG_Ready_Questionnaire.py',
         '12_📄_COSIRI.py',
+        '13_🎯_Roadmap_Tracker.py',  # Accessible to all roles
     ]
 }
 
@@ -51,6 +54,7 @@ FEATURE_PERMISSIONS = {
     'can_generate_reports': ['admin', 'manager'],
     'can_manage_users': ['admin'],
     'can_manage_companies': ['admin'],
+    'can_manage_company': ['admin', 'manager'],  # ✅ Can manage company settings including baseline year
     'can_view_all_companies': ['admin'],
     'can_export_data': ['admin', 'manager'],
     'can_request_documents': ['admin', 'manager', 'normal_user'],  # ✅ Added document request permission
