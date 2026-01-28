@@ -2,6 +2,7 @@
 
 import streamlit as st
 from core.database import DatabaseManager
+from functools import lru_cache
 
 @st.cache_resource
 def get_database():
@@ -1158,5 +1159,475 @@ def get_sedg_ghg_data(company_id, reporting_period):
             result = _rows_to_result(rows)
 
         return result
+    finally:
+        db.disconnect()
+
+# ============================================================================
+# BASELINE YEAR FUNCTIONS
+# ============================================================================
+
+@st.cache_data(ttl=0)  # NO CACHING - baseline year is critical and must always be current
+def get_company_baseline_info(company_id):
+    """
+    Get baseline year information for a company
+    
+    Returns dict with:
+    - baseline_year: int or None
+    - baseline_notes: str or None
+    - baseline_set_date: date or None
+    - baseline_set_by: int or None
+    - baseline_set_by_username: str or None
+    """
+    from core.cache import get_database
+    
+    db = get_database()
+    if not db.connect():
+        return None
+    
+    try:
+        query = """
+            SELECT 
+                c.baseline_year,
+                c.baseline_notes,
+                c.baseline_set_date,
+                c.baseline_set_by,
+                u.username as baseline_set_by_username
+            FROM companies c
+            LEFT JOIN users u ON c.baseline_set_by = u.id
+            WHERE c.id = %s
+        """
+        result = db.fetch_one(query, (company_id,))
+        
+        if result:
+            return {
+                'baseline_year': result[0],
+                'baseline_notes': result[1],
+                'baseline_set_date': result[2],
+                'baseline_set_by': result[3],
+                'baseline_set_by_username': result[4]
+            }
+        return None
+    finally:
+        db.disconnect()
+
+
+@st.cache_data(ttl=0)  # NO CACHING - baseline emissions must always be current
+def get_baseline_emissions(company_id, baseline_year):
+    """
+    Get total emissions for the baseline year, broken down by scope
+    
+    Returns dict with:
+    - total: float
+    - scope_1: float
+    - scope_2: float
+    - scope_3: float
+    """
+    from core.cache import get_database
+    
+    if not baseline_year:
+        return {'total': 0, 'scope_1': 0, 'scope_2': 0, 'scope_3': 0}
+    
+    db = get_database()
+    if not db.connect():
+        return {'total': 0, 'scope_1': 0, 'scope_2': 0, 'scope_3': 0}
+    
+    try:
+        query = """
+            SELECT 
+                s.scope_number,
+                SUM(COALESCE(e.co2_equivalent, 0)) as total_co2e
+            FROM emissions_data e
+            JOIN ghg_emission_sources src ON e.emission_source_id = src.id
+            JOIN ghg_categories c ON src.category_id = c.id
+            JOIN ghg_scopes s ON c.scope_id = s.id
+            WHERE e.company_id = %s 
+            AND e.reporting_period LIKE %s
+            GROUP BY s.scope_number
+        """
+        
+        results = db.fetch_query(query, (company_id, f"{baseline_year}%"))
+        
+        emissions = {'total': 0, 'scope_1': 0, 'scope_2': 0, 'scope_3': 0}
+        
+        for row in results:
+            scope_num = row[0]
+            co2e = float(row[1]) / 1000  # Convert kg to tonnes
+            emissions[f'scope_{scope_num}'] = co2e
+            emissions['total'] += co2e
+        
+        return emissions
+    finally:
+        db.disconnect()
+
+
+@st.cache_data(ttl=300)
+def get_multi_year_emissions(company_id, years):
+    """
+    Get emissions data for multiple years
+    
+    Args:
+        company_id: int
+        years: list of int (e.g., [2023, 2024, 2025])
+    
+    Returns dict:
+        {
+            2023: {'total': 1234.56, 'scope_1': 456.78, 'scope_2': 123.45, 'scope_3': 654.33},
+            2024: {...},
+            ...
+        }
+    """
+    from core.cache import get_database
+    
+    if not years:
+        return {}
+    
+    db = get_database()
+    if not db.connect():
+        return {}
+    
+    try:
+        # Build query with multiple years
+        year_patterns = [f"{year}%" for year in years]
+        placeholders = ','.join(['%s'] * len(year_patterns))
+        
+        query = f"""
+            SELECT 
+                SUBSTRING(e.reporting_period, 1, 4) as year,
+                s.scope_number,
+                SUM(COALESCE(e.co2_equivalent, 0)) as total_co2e
+            FROM emissions_data e
+            JOIN ghg_emission_sources src ON e.emission_source_id = src.id
+            JOIN ghg_categories c ON src.category_id = c.id
+            JOIN ghg_scopes s ON c.scope_id = s.id
+            WHERE e.company_id = %s 
+            AND (
+                {' OR '.join([f"e.reporting_period LIKE %s" for _ in year_patterns])}
+            )
+            GROUP BY SUBSTRING(e.reporting_period, 1, 4), s.scope_number
+            ORDER BY year, s.scope_number
+        """
+        
+        results = db.fetch_query(query, (company_id, *year_patterns))
+        
+        # Organize data by year
+        emissions_by_year = {}
+        for year in years:
+            emissions_by_year[year] = {
+                'total': 0,
+                'scope_1': 0,
+                'scope_2': 0,
+                'scope_3': 0
+            }
+        
+        for row in results:
+            year = int(row[0])
+            scope_num = row[1]
+            co2e = float(row[2]) / 1000  # Convert kg to tonnes
+            
+            if year in emissions_by_year:
+                emissions_by_year[year][f'scope_{scope_num}'] = co2e
+                emissions_by_year[year]['total'] += co2e
+        
+        return emissions_by_year
+    finally:
+        db.disconnect()
+
+
+@st.cache_data(ttl=300)
+def get_scope_breakdown_by_source(company_id, year, scope_number):
+    """
+    Get detailed breakdown of emissions sources for a specific scope and year
+    
+    Returns list of dicts:
+        [
+            {'source_name': 'Stationary Combustion', 'co2e': 320.45, 'percentage': 70.1},
+            {'source_name': 'Mobile Combustion', 'co2e': 136.33, 'percentage': 29.9},
+            ...
+        ]
+    """
+    from core.cache import get_database
+    
+    db = get_database()
+    if not db.connect():
+        return []
+    
+    try:
+        query = """
+            SELECT 
+                src.source_name,
+                SUM(COALESCE(e.co2_equivalent, 0)) as total_co2e
+            FROM emissions_data e
+            JOIN ghg_emission_sources src ON e.emission_source_id = src.id
+            JOIN ghg_categories c ON src.category_id = c.id
+            JOIN ghg_scopes s ON c.scope_id = s.id
+            WHERE e.company_id = %s 
+            AND e.reporting_period LIKE %s
+            AND s.scope_number = %s
+            GROUP BY src.source_name
+            ORDER BY total_co2e DESC
+        """
+        
+        results = db.fetch_query(query, (company_id, f"{year}%", scope_number))
+        
+        # Calculate total for percentage
+        total_co2e = sum(float(row[1]) for row in results)
+        
+        breakdown = []
+        for row in results:
+            source_name = row[0]
+            co2e = float(row[1])
+            percentage = (co2e / total_co2e * 100) if total_co2e > 0 else 0
+            
+            breakdown.append({
+                'source_name': source_name,
+                'co2e': co2e,
+                'percentage': percentage
+            })
+        
+        return breakdown
+    finally:
+        db.disconnect()
+
+
+@st.cache_data(ttl=300)
+def get_temporal_trend_for_scope(company_id, year, scope_number):
+    """
+    Get monthly/quarterly trend for a specific scope within a year
+    
+    Returns list of dicts:
+        [
+            {'period': '2024-Q1', 'co2e': 123.45},
+            {'period': '2024-Q2', 'co2e': 156.78},
+            ...
+        ]
+    """
+    from core.cache import get_database
+    
+    db = get_database()
+    if not db.connect():
+        return []
+    
+    try:
+        query = """
+            SELECT 
+                e.reporting_period,
+                SUM(COALESCE(e.co2_equivalent, 0)) as total_co2e
+            FROM emissions_data e
+            JOIN ghg_emission_sources src ON e.emission_source_id = src.id
+            JOIN ghg_categories c ON src.category_id = c.id
+            JOIN ghg_scopes s ON c.scope_id = s.id
+            WHERE e.company_id = %s 
+            AND e.reporting_period LIKE %s
+            AND s.scope_number = %s
+            GROUP BY e.reporting_period
+            ORDER BY e.reporting_period
+        """
+        
+        results = db.fetch_query(query, (company_id, f"{year}%", scope_number))
+        
+        trend = []
+        for row in results:
+            period = row[0]
+            co2e = float(row[1])
+            
+            trend.append({
+                'period': period,
+                'co2e': co2e
+            })
+        
+        return trend
+    finally:
+        db.disconnect()
+
+
+@st.cache_data(ttl=600)  # Cache for 10 minutes
+def get_emissions_coverage(company_id, year=None):
+    """
+    Get coverage data for a company
+    
+    If year is None, returns all years
+    If year is specified, returns only that year
+    
+    Returns list of dicts or None if table doesn't exist:
+        [
+            {'year': 2023, 'scope_1': 100.0, 'scope_2': 100.0, 'scope_3': 85.0},
+            {'year': 2024, 'scope_1': 100.0, 'scope_2': 100.0, 'scope_3': 90.0},
+            ...
+        ]
+    """
+    from core.cache import get_database
+    
+    db = get_database()
+    if not db.connect():
+        return None
+    
+    try:
+        # Check if table exists
+        check_query = """
+            SELECT COUNT(*) 
+            FROM INFORMATION_SCHEMA.TABLES 
+            WHERE TABLE_SCHEMA = DATABASE() 
+            AND TABLE_NAME = 'emissions_coverage'
+        """
+        result = db.fetch_one(check_query)
+        
+        if not result or result[0] == 0:
+            return None  # Table doesn't exist
+        
+        # Build query
+        if year:
+            query = """
+                SELECT year, scope_number, coverage_percentage
+                FROM emissions_coverage
+                WHERE company_id = %s AND year = %s
+                ORDER BY scope_number
+            """
+            params = (company_id, year)
+        else:
+            query = """
+                SELECT year, scope_number, coverage_percentage
+                FROM emissions_coverage
+                WHERE company_id = %s
+                ORDER BY year, scope_number
+            """
+            params = (company_id,)
+        
+        results = db.fetch_query(query, params)
+        
+        # Organize by year
+        coverage_by_year = {}
+        for row in results:
+            year_val = row[0]
+            scope_num = row[1]
+            coverage = float(row[2]) if row[2] else 0
+            
+            if year_val not in coverage_by_year:
+                coverage_by_year[year_val] = {
+                    'year': year_val,
+                    'scope_1': 0,
+                    'scope_2': 0,
+                    'scope_3': 0
+                }
+            
+            coverage_by_year[year_val][f'scope_{scope_num}'] = coverage
+        
+        return list(coverage_by_year.values())
+    
+    except Exception as e:
+        print(f"Error fetching coverage data: {e}")
+        return None
+    finally:
+        db.disconnect()
+
+
+def set_company_baseline_year(company_id, baseline_year, notes, user_id):
+    """
+    Set or update the baseline year for a company
+    
+    Args:
+        company_id: int
+        baseline_year: int
+        notes: str or None
+        user_id: int (who is setting the baseline)
+    
+    Returns:
+        bool: True if successful, False otherwise
+    """
+    from core.cache import get_database
+    from datetime import date
+    import time
+    
+    db = get_database()
+    if not db.connect():
+        return False
+    
+    try:
+        query = """
+            UPDATE companies 
+            SET baseline_year = %s,
+                baseline_notes = %s,
+                baseline_set_date = %s,
+                baseline_set_by = %s
+            WHERE id = %s
+        """
+        
+        result = db.execute_query(
+            query, 
+            (baseline_year, notes, date.today(), user_id, company_id)
+        )
+        
+        # Verify the update was successful by immediately fetching the data
+        if result:
+            # Small delay to ensure database writes
+            time.sleep(0.1)
+            
+            # Clear ALL Streamlit caches - this is the nuclear option
+            st.cache_data.clear()
+            st.cache_resource.clear()
+            
+            print(f"✅ Baseline year {baseline_year} set for company {company_id}")
+            return True
+        else:
+            print(f"❌ Database update failed for company {company_id}")
+            return False
+    except Exception as e:
+        print(f"Error setting baseline year: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+    finally:
+        db.disconnect()
+
+
+def update_emissions_coverage(company_id, year, scope_number, coverage_percentage, notes=None):
+    """
+    Update or insert coverage data for a specific company/year/scope
+    
+    Returns:
+        bool: True if successful, False otherwise
+    """
+    from core.cache import get_database
+    
+    db = get_database()
+    if not db.connect():
+        return False
+    
+    try:
+        # Check if table exists
+        check_query = """
+            SELECT COUNT(*) 
+            FROM INFORMATION_SCHEMA.TABLES 
+            WHERE TABLE_SCHEMA = DATABASE() 
+            AND TABLE_NAME = 'emissions_coverage'
+        """
+        result = db.fetch_one(check_query)
+        
+        if not result or result[0] == 0:
+            print("Coverage table doesn't exist")
+            return False
+        
+        # Use INSERT ... ON DUPLICATE KEY UPDATE
+        query = """
+            INSERT INTO emissions_coverage 
+                (company_id, year, scope_number, coverage_percentage, notes)
+            VALUES (%s, %s, %s, %s, %s)
+            ON DUPLICATE KEY UPDATE
+                coverage_percentage = VALUES(coverage_percentage),
+                notes = VALUES(notes),
+                updated_at = CURRENT_TIMESTAMP
+        """
+        
+        db.execute_query(
+            query,
+            (company_id, year, scope_number, coverage_percentage, notes)
+        )
+        
+        # Clear cache
+        get_emissions_coverage.clear()
+        
+        return True
+    except Exception as e:
+        print(f"Error updating coverage: {e}")
+        return False
     finally:
         db.disconnect()
