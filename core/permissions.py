@@ -11,7 +11,7 @@ def check_authentication():
     Add this at the top of every protected page.
     """
     if not st.session_state.get('authenticated', False):
-        st.warning("⚠️ Please login to access this page")
+        st.warning("⚠️ Please login to access this page. Click the **main** button in the sidebar to go back to the login screen.")
         st.stop()
 
 
