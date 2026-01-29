@@ -58,7 +58,6 @@ if 'action_plans_tab' not in st.session_state:
     st.session_state.action_plans_tab = 0  # 0 = Add Initiative, 1 = View  Initiatives
 
 # Quick navigation buttons at the top
-st.markdown("### Quick Navigation")
 navigation_cols = st.columns(4)
 with navigation_cols[0]:
     if st.button("📊 Overview", use_container_width=True, type="primary" if st.session_state.page_section == "📊 Overview" else "secondary"):
