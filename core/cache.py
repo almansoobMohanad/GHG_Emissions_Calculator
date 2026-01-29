@@ -164,7 +164,7 @@ def get_emissions_data(company_id, period_filter=None, scope_filter=None, status
         status_filter: Optional verification status or "All".
     
     Returns:
-        list[tuple]: Emissions records with all details.
+        list[tuple]: Emissions records with all details including verifier info.
     """
     db = get_database()
     if not db.connect():
@@ -188,12 +188,16 @@ def get_emissions_data(company_id, period_filter=None, scope_filter=None, status
                 e.calculation_method,
                 e.notes,
                 e.created_at,
-                u.username as entered_by
+                u.username as entered_by,
+                e.verified_by,
+                e.verified_at,
+                vr.username as verified_by_name
             FROM emissions_data e
             JOIN ghg_emission_sources src ON e.emission_source_id = src.id
             JOIN ghg_categories c ON src.category_id = c.id
             JOIN ghg_scopes s ON c.scope_id = s.id
             JOIN users u ON e.user_id = u.id
+            LEFT JOIN users vr ON e.verified_by = vr.id
             WHERE e.company_id = %s
         """
         params = [company_id]
@@ -224,6 +228,7 @@ def clear_emissions_cache():
     """Clear emissions-related caches after INSERT/UPDATE/DELETE operations."""
     get_emissions_data.clear()
     get_emissions_summary.clear()
+    get_unverified_emissions.clear()  # Verify Data page
     
     # Add these new clears
     get_company_emissions_for_analytics.clear()  # Dashboard charts
@@ -1007,7 +1012,7 @@ def get_unverified_emissions(company_id):
 
 
 def verify_emission(emission_id):
-    """Verify an emission entry and clear relevant caches.
+    """Verify an emission entry and record who verified it and when.
     
     Args:
         emission_id: Emission entry ID to verify.
@@ -1022,11 +1027,13 @@ def verify_emission(emission_id):
     try:
         query = """
         UPDATE emissions_data 
-        SET verification_status = 'verified'
+        SET verification_status = 'verified',
+            verified_by = %s,
+            verified_at = NOW()
         WHERE id = %s
         """
         
-        result = db.execute_query(query, (emission_id,))
+        result = db.execute_query(query, (st.session_state.user_id, emission_id))
         
         if result:
             # Clear relevant caches
