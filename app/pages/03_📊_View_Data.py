@@ -94,11 +94,12 @@ else:
     
     st.subheader("Emissions Records")
     
-    # Create DataFrame for table display
+    # Create DataFrame for table display (now with 19 columns including verifier info)
     df_display = pd.DataFrame(rows, columns=[
         'ID', 'Period', 'Scope_Num', 'Scope', 'Category', 'Source',
         'Activity_Data', 'Unit', 'Emission_Factor', 'CO2e_kg',
-        'Status', 'Data_Source', 'Calc_Method', 'Notes', 'Created', 'Entered_By'
+        'Status', 'Data_Source', 'Calc_Method', 'Notes', 'Created', 'Entered_By',
+        'Verified_By_ID', 'Verified_At', 'Verified_By_Name'
     ])
     
     # Format the display columns
