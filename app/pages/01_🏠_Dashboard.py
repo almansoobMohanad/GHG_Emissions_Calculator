@@ -236,17 +236,17 @@ if st.session_state.company_id:
     # ============================================================================
     st.subheader("📊 Emissions Analysis")
     
-    col_mode, col_year = st.columns([1, 2])
+    # View mode navigation buttons
+    view_mode_cols = st.columns(2)
+    with view_mode_cols[0]:
+        if st.button("📅 Single Year View", use_container_width=True, type="primary" if st.session_state.view_mode == "single" else "secondary"):
+            st.session_state.view_mode = "single"
+            st.rerun()
     
-    with col_mode:
-        view_mode = st.radio(
-            "View Mode",
-            options=['single', 'multi'],
-            format_func=lambda x: '📅 Single Year View' if x == 'single' else '📈 Multi-Year Comparison',
-            horizontal=True,
-            key='view_mode_selector'
-        )
-        st.session_state.view_mode = view_mode
+    with view_mode_cols[1]:
+        if st.button("📈 Multi-Year Comparison", use_container_width=True, type="primary" if st.session_state.view_mode == "multi" else "secondary"):
+            st.session_state.view_mode = "multi"
+            st.rerun()
     
     st.divider()
     
