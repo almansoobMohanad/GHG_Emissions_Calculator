@@ -101,9 +101,7 @@ def get_available_years(company_id):
         
         if rows:
             years = sorted([int(row[0]) for row in rows if row[0]])
-            # Add next year for planning purposes
-            current_year = max(years)
-            return years + [current_year + 1]
+            return years
         
         return []
     finally:
