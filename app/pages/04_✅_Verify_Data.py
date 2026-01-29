@@ -63,9 +63,73 @@ if not unverified:
 # Display unverified emissions
 st.subheader("📋 Unverified Emissions")
 
-if st.button("🔄 Refresh Unverified Data", use_container_width=False, help="Refresh to get latest unverified emissions"):
-    st.cache_data.clear()
-    st.rerun()
+# Verify All button with confirmation
+col1, col2 = st.columns([1, 4])
+with col1:
+    if st.button("✅ Verify All", type="primary", use_container_width=True, help="Approve all pending emissions at once"):
+        st.session_state.show_verify_all_confirmation = True
+
+with col2:
+    if st.button("🔄 Refresh Unverified Data", use_container_width=False, help="Refresh to get latest unverified emissions"):
+        st.cache_data.clear()
+        st.rerun()
+
+# Confirmation dialog for Verify All
+if st.session_state.get('show_verify_all_confirmation', False):
+    st.divider()
+    
+    with st.container(border=True):
+        st.warning(f"⚠️ **Confirm Verify All**")
+        st.markdown(f"""
+        You are about to **verify all {len(unverified)} unverified emissions**.
+        
+        This action will:
+        - ✅ Mark all {len(unverified)} entries as verified
+        - 📊 Include them in official emissions reports
+        - 🔒 Cannot be undone
+        
+        **Are you sure?**
+        """)
+        
+        conf_col1, conf_col2, conf_col3 = st.columns([1, 1, 2])
+        
+        with conf_col1:
+            if st.button("✅ Yes, Verify All", type="primary", use_container_width=True, key="confirm_verify_all"):
+                # Verify all emissions
+                from core.cache import get_database
+                db = get_database()
+                
+                try:
+                    verified_count = 0
+                    failed_count = 0
+                    
+                    for emission in unverified:
+                        if verify_emission(emission['id']):
+                            verified_count += 1
+                        else:
+                            failed_count += 1
+                    
+                    st.session_state.show_verify_all_confirmation = False
+                    
+                    if verified_count > 0:
+                        st.success(f"✅ Successfully verified {verified_count} emissions!")
+                        if failed_count > 0:
+                            st.warning(f"⚠️ Failed to verify {failed_count} emissions. Please try again.")
+                        st.balloons()
+                        st.rerun()
+                    else:
+                        st.error("❌ Failed to verify any emissions. Please try again.")
+                
+                except Exception as e:
+                    st.error(f"❌ Error: {str(e)}")
+                    st.session_state.show_verify_all_confirmation = False
+        
+        with conf_col2:
+            if st.button("❌ Cancel", use_container_width=True, key="cancel_verify_all"):
+                st.session_state.show_verify_all_confirmation = False
+                st.rerun()
+    
+    st.divider()
 
 st.caption(f"Showing {len(unverified)} unverified entries")
 
