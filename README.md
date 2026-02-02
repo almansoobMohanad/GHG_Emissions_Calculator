@@ -2,6 +2,7 @@ GHG Final — Streamlit App
 =========================
 
 A Streamlit-based greenhouse gas (GHG) tracking platform for companies to log activity data, calculate emissions, manage emission factors, verify entries, and plan reduction roadmaps.
+[Live Demo](https://manage-ghg-emissions.streamlit.app/)
 
 ## Features
 - **Authentication & roles**: Login/registration with role-aware pages (admin/manager/user).
