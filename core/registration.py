@@ -4,6 +4,7 @@ Handles both joining existing companies and creating new ones
 """
 from core.cache import get_database
 from core.authentication import hash_password
+from core.geocoding import geocode_address
 import logging
 
 logger = logging.getLogger(__name__)
@@ -163,13 +164,24 @@ def register_user_with_new_company(username, email, password, company_data):
         # Hash password
         password_hash = hash_password(password)
         
+        # Geocode address if provided
+        latitude = None
+        longitude = None
+        if company_data.get('address'):
+            logger.info(f"Attempting to geocode address for new company: {company_data['company_name']}")
+            latitude, longitude, geocode_msg = geocode_address(company_data['address'])
+            if latitude and longitude:
+                logger.info(f"✅ Geocoded: {latitude}, {longitude}")
+            else:
+                logger.warning(f"⚠️ Geocoding result: {geocode_msg}")
+        
         # Step 1: Create company with pending status
         company_query = """
         INSERT INTO companies (
             company_name, company_code, industry_sector,
-            address, contact_email, verification_status
+            address, latitude, longitude, contact_email, verification_status
         )
-        VALUES (%s, %s, %s, %s, %s, 'pending')
+        VALUES (%s, %s, %s, %s, %s, %s, %s, 'pending')
         """
         
         company_id = db.execute_query(
@@ -179,6 +191,8 @@ def register_user_with_new_company(username, email, password, company_data):
                 company_data['company_code'],
                 company_data['industry_sector'],
                 company_data.get('address'),
+                latitude,
+                longitude,
                 company_data.get('contact_email')
             ),
             return_id=True
