@@ -72,15 +72,23 @@ class DatabaseSetup:
                     company_code VARCHAR(50) UNIQUE NOT NULL,
                     industry_sector VARCHAR(100) NULL,
                     address TEXT NULL,
+                    latitude DECIMAL(10, 8) NULL COMMENT 'Latitude coordinate for company location',
+                    longitude DECIMAL(11, 8) NULL COMMENT 'Longitude coordinate for company location',
                     contact_email VARCHAR(255) NULL,
                     contact_phone VARCHAR(50) NULL,
                     verification_status ENUM('pending', 'verified', 'rejected') DEFAULT 'pending',
                     verification_date DATETIME NULL,
                     verified_by INT NULL,
+                    baseline_year INT DEFAULT NULL COMMENT 'The year designated as the reference point for emissions comparisons',
+                    baseline_notes TEXT DEFAULT NULL COMMENT 'Notes about why this baseline year was chosen',
+                    baseline_set_date DATE DEFAULT NULL COMMENT 'When the baseline year was designated',
+                    baseline_set_by INT DEFAULT NULL COMMENT 'User ID who set the baseline year',
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                     INDEX idx_companies_status (verification_status),
-                    INDEX idx_companies_code (company_code)
+                    INDEX idx_companies_code (company_code),
+                    INDEX idx_companies_location (latitude, longitude),
+                    INDEX idx_companies_baseline_year (baseline_year)
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
             """,
             
@@ -196,8 +204,7 @@ class DatabaseSetup:
                     uploaded_by INT NOT NULL,
                     document_type ENUM('report', 'certificate') NOT NULL,
                     file_name VARCHAR(255) NOT NULL,
-                    file_path VARCHAR(500) NULL,
-                    file_content LONGBLOB NULL,
+                    file_path VARCHAR(500) NOT NULL,
                     file_size INT NULL,
                     mime_type VARCHAR(100) NULL,
                     reporting_period VARCHAR(20) NULL,
@@ -207,6 +214,7 @@ class DatabaseSetup:
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                     FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE,
                     FOREIGN KEY (uploaded_by) REFERENCES users(id) ON DELETE RESTRICT,
+                    INDEX uploaded_by (uploaded_by),
                     INDEX idx_cosiri_company (company_id),
                     INDEX idx_cosiri_type (document_type),
                     INDEX idx_cosiri_active (is_active)
@@ -315,6 +323,7 @@ class DatabaseSetup:
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     FOREIGN KEY (initiative_id) REFERENCES reduction_initiatives(id) ON DELETE CASCADE,
                     FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL,
+                    INDEX created_by (created_by),
                     INDEX idx_initiative_date (initiative_id, progress_date)
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Progress tracking for reduction initiatives'
             """,
@@ -332,8 +341,29 @@ class DatabaseSetup:
                     uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     FOREIGN KEY (initiative_id) REFERENCES reduction_initiatives(id) ON DELETE CASCADE,
                     FOREIGN KEY (uploaded_by) REFERENCES users(id) ON DELETE SET NULL,
+                    INDEX uploaded_by (uploaded_by),
                     INDEX idx_initiative (initiative_id)
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Supporting documents for initiatives'
+            """,
+            
+            'emissions_coverage': """
+                CREATE TABLE IF NOT EXISTS emissions_coverage (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    company_id INT NOT NULL,
+                    year INT NOT NULL,
+                    scope_number INT NOT NULL COMMENT 'Scope 1, 2, or 3',
+                    coverage_percentage DECIMAL(5,2) DEFAULT NULL COMMENT 'Estimated percentage of emissions covered (0-100)',
+                    total_expected_sources INT DEFAULT NULL COMMENT 'Total number of emission sources expected',
+                    tracked_sources INT DEFAULT NULL COMMENT 'Number of sources actually tracked',
+                    notes TEXT COMMENT 'Additional context about coverage for this scope/year',
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE,
+                    UNIQUE KEY unique_company_year_scope (company_id, year, scope_number),
+                    INDEX idx_company_year (company_id, year),
+                    INDEX idx_scope (scope_number),
+                    CONSTRAINT chk_scope_number CHECK (scope_number IN (1, 2, 3))
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Tracks data coverage evolution over time'
             """
         }
         
@@ -495,7 +525,9 @@ class DatabaseSetup:
             print("  2. Login with: admin / admin123")
             print("  3. Change admin password immediately!")
             print("\n📊 Database includes:")
-            print("  - 13 tables created")
+            print("  - 14 tables created")
+            print("  - Baseline year tracking for companies")
+            print("  - Emissions coverage tracking over time")
             print("  - GHG Scopes (1, 2, 3)")
             print("  - Sample emission categories and sources")
             print("  - Reduction goals and initiatives tracking")
