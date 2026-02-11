@@ -181,8 +181,17 @@ def _process_bulk_upload(df: pd.DataFrame, sources: list, auto_verify: bool = Fa
     success_count = 0
     failures = []
     
+    # Progress UI
+    total_rows = len(df)
+    progress_bar = st.progress(0, text="Initializing import...")
+    status_text = st.empty()
+    
     # Process each row
     for idx, row in df.iterrows():
+        # Update progress
+        progress_pct = (idx + 1) / total_rows
+        progress_bar.progress(progress_pct, text=f"Processing row {idx + 1} of {total_rows}...")
+        
         src_code = str(row.get("source_code", "")).strip()
         rpt = str(row.get("reporting_period", "")).strip()
         
@@ -263,6 +272,10 @@ def _process_bulk_upload(df: pd.DataFrame, sources: list, auto_verify: bool = Fa
                 failures.append((idx + 2, "Database insert failed"))
         except Exception as e:
             failures.append((idx + 2, f"Database error: {str(e)}"))
+    
+    # Finalize progress
+    progress_bar.progress(1.0, text="✅ Processing complete!")
+    status_text.empty()
     
     db.disconnect()
     
