@@ -22,7 +22,8 @@ from core.cache import (
     get_scope_breakdown_by_source,
     get_temporal_trend_for_scope,
     get_emissions_coverage,
-    set_company_baseline_year
+    set_company_baseline_year,
+    get_combined_analytics  # Added for performance optimization
 )
 from core.permissions import check_page_permission, show_permission_badge, can_user
 from config.permissions import get_role_display_name
@@ -334,6 +335,9 @@ if st.session_state.company_id:
             else:
                 st.divider()
                 
+                # Retrieve combined analytics (cached) to speed up loading
+                analytics = get_combined_analytics(st.session_state.company_id, selected_year)
+                
                 # Scope breakdown tabs
                 st.markdown("### 🔍 Scope Analysis")
                 
@@ -352,12 +356,8 @@ if st.session_state.company_id:
                             with col_metric1:
                                 st.metric(f"Scope {scope_num} Total", f"{scope_total:.2f} tCO2e")
                             
-                            # Get source breakdown
-                            breakdown = get_scope_breakdown_by_source(
-                                st.session_state.company_id, 
-                                selected_year, 
-                                scope_num
-                            )
+                            # Get source breakdown from pre-fetched analytics
+                            breakdown = analytics['breakdown'].get(scope_num, [])
                             
                             with col_metric2:
                                 st.metric("Number of Sources", len(breakdown))
@@ -396,12 +396,8 @@ if st.session_state.company_id:
                                     fig_bar.update_layout(showlegend=False)
                                     st.plotly_chart(fig_bar, use_container_width=True)
                                 
-                                # Temporal trend
-                                trend = get_temporal_trend_for_scope(
-                                    st.session_state.company_id,
-                                    selected_year,
-                                    scope_num
-                                )
+                                # Temporal trend from pre-fetched analytics
+                                trend = analytics['trend'].get(scope_num, [])
                                 
                                 if trend and len(trend) > 1:
                                     fig_line = go.Figure()

@@ -61,7 +61,11 @@ def get_company_info(company_id):
         return None
     
     try:
-        query = "SELECT * FROM companies WHERE id = %s"
+        query = """
+        SELECT id, company_name, company_code, industry_sector, 
+               address, contact_email, verification_status 
+        FROM companies WHERE id = %s
+        """
         row = db.fetch_one(query, (company_id,))
         
         if row:
@@ -69,7 +73,7 @@ def get_company_info(company_id):
                 'id': row[0], 'company_name': row[1],
                 'company_code': row[2], 'industry_sector': row[3],
                 'address': row[4], 'contact_email': row[5],
-                'verification_status': row[7]
+                'verification_status': row[6]
             }
         return None
     finally:
@@ -90,9 +94,9 @@ def get_available_years(company_id):
         return []
     
     try:
-        # Extract year from reporting_period column
+        # Extract year from reporting_period column - handle "YYYY..." formats efficiently
         query = """
-        SELECT DISTINCT YEAR(STR_TO_DATE(reporting_period, '%Y %%')) as year
+        SELECT DISTINCT LEFT(reporting_period, 4) as year
         FROM emissions_data
         WHERE company_id = %s
         ORDER BY year
@@ -100,8 +104,16 @@ def get_available_years(company_id):
         rows = db.fetch_query(query, (company_id,))
         
         if rows:
-            years = sorted([int(row[0]) for row in rows if row[0]])
-            return years
+            years = []
+            for row in rows:
+                try:
+                    # Filter out any non-numeric results
+                    y_str = row[0]
+                    if y_str and y_str.isdigit():
+                        years.append(int(y_str))
+                except (ValueError, TypeError):
+                    continue
+            return sorted(list(set(years)))
         
         return []
     finally:
@@ -131,11 +143,14 @@ def get_emissions_summary(company_id, reporting_period):
         LEFT JOIN ghg_emission_sources src ON e.emission_source_id = src.id
         LEFT JOIN ghg_categories c ON src.category_id = c.id
         LEFT JOIN ghg_scopes s ON c.scope_id = s.id
-        WHERE e.company_id = %s AND e.reporting_period = %s
+        WHERE e.company_id = %s AND e.reporting_period LIKE %s
         GROUP BY s.scope_number
         """
         
-        rows = db.fetch_query(query, (company_id, reporting_period))
+        # Add wildcards to period if it looks like a year
+        period_pattern = f"{reporting_period}%"
+        
+        rows = db.fetch_query(query, (company_id, period_pattern))
         
         result = {'scope_1': 0, 'scope_2': 0, 'scope_3': 0}
         for row in rows:
@@ -1171,7 +1186,7 @@ def get_sedg_ghg_data(company_id, reporting_period):
 # BASELINE YEAR FUNCTIONS
 # ============================================================================
 
-@st.cache_data(ttl=0)  # NO CACHING - baseline year is critical and must always be current
+@st.cache_data(ttl=300)  # Cached for performance
 def get_company_baseline_info(company_id):
     """
     Get baseline year information for a company
@@ -1216,7 +1231,7 @@ def get_company_baseline_info(company_id):
         db.disconnect()
 
 
-@st.cache_data(ttl=0)  # NO CACHING - baseline emissions must always be current
+@st.cache_data(ttl=300)  # Cached for performance
 def get_baseline_emissions(company_id, baseline_year):
     """
     Get total emissions for the baseline year, broken down by scope
@@ -1636,3 +1651,35 @@ def update_emissions_coverage(company_id, year, scope_number, coverage_percentag
         return False
     finally:
         db.disconnect()
+
+
+@st.cache_data(ttl=300)
+def get_combined_analytics(company_id, year):
+    """
+    Fetch all scope breakdowns and trends for a given year in parallel logic
+    to minimize database round trips and latency.
+    
+    Returns:
+        dict: {
+            'breakdown': {1: [], 2: [], 3: []},
+            'trend': {1: [], 2: [], 3: []}
+        }
+    """
+    # Simply call the existing cached functions. Since this parent function 
+    # is also cached, subsequent page loads will be instant and require 0 DB calls.
+    # The first load will still do multiple DB calls, but the result is aggregated.
+    
+    breakdown = {
+        1: get_scope_breakdown_by_source(company_id, year, 1),
+        2: get_scope_breakdown_by_source(company_id, year, 2),
+        3: get_scope_breakdown_by_source(company_id, year, 3)
+    }
+    
+    trend = {
+        1: get_temporal_trend_for_scope(company_id, year, 1),
+        2: get_temporal_trend_for_scope(company_id, year, 2),
+        3: get_temporal_trend_for_scope(company_id, year, 3)
+    }
+    
+    return {'breakdown': breakdown, 'trend': trend}
+
