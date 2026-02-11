@@ -137,8 +137,10 @@ if page_section == "📊 Overview":
                 )
             
             with col2:
+                # Add YTD label if it is the current year
+                label = "Current Emissions (YTD)" if progress['current_year'] == datetime.now().year else "Current Emissions"
                 st.metric(
-                    "Current Emissions",
+                    label,
                     f"{progress['current_emissions']:,.1f} t CO₂e",
                     f"{progress['current_year']}"
                 )
@@ -182,6 +184,20 @@ if page_section == "📊 Overview":
             
             # Create progress chart
             fig = go.Figure()
+
+            # Calculate projection for current year
+            current_date = datetime.now()
+            current_year = current_date.year
+            day_of_year = current_date.timetuple().tm_yday
+            
+            # Identify if the last data point is the current incomplete year
+            projected_emissions = None
+            if years_range[-1] == current_year and actual_dict.get(current_year):
+                current_val = actual_dict[current_year]
+                # Simple linear projection: (Value / Days_passed) * 365
+                # Only project if we are at least 30 days into the year to avoid huge multipliers
+                if day_of_year > 30:
+                    projected_emissions = (current_val / day_of_year) * 365
             
             fig.add_trace(go.Scatter(
                 x=years_range,
@@ -194,11 +210,22 @@ if page_section == "📊 Overview":
             fig.add_trace(go.Scatter(
                 x=years_range,
                 y=actual_emissions_list,
-                name='Actual Emissions',
+                name='Actual Emissions (YTD)',
                 line=dict(color='blue', width=3),
                 mode='lines+markers',
                 marker=dict(size=8)
             ))
+
+            # Add projection point if applicable
+            if projected_emissions:
+                 fig.add_trace(go.Scatter(
+                    x=[current_year],
+                    y=[projected_emissions],
+                    name=f'Projected {current_year}',
+                    mode='markers',
+                    marker=dict(color='orange', size=10, symbol='star'),
+                    hovertemplate='Projected End-of-Year: %{y:.1f} t CO2e<extra></extra>'
+                ))
             
             fig.update_layout(
                 title="Emissions Reduction Progress",

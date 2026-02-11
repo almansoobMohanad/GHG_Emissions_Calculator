@@ -260,6 +260,12 @@ def clear_emissions_cache():
     get_sedg_ghg_data.clear() # SEDG Report
     get_baseline_emissions.clear() # Baseline emissions might change if data is added for baseline year
 
+    # Clear reduction tracker caches (Import here to avoid circular dependency)
+    try:
+        from core.reduction_cache import clear_reduction_tracker_cache
+        clear_reduction_tracker_cache()
+    except ImportError:
+        pass  # reduction_cache might not be initialized fully yet if circular import issues persist
 
 
 @st.cache_data(ttl=300)  # Cache for 5 minutes
