@@ -188,11 +188,11 @@ def get_yearly_emissions(company_id: int) -> List[Dict[str, Any]]:
     
     query = """
         SELECT 
-            YEAR(created_at) as year,
+            LEFT(reporting_period, 4) as year,
             SUM(co2_equivalent)/1000 as total_emissions
         FROM emissions_data
         WHERE company_id = %s
-        GROUP BY YEAR(created_at)
+        GROUP BY LEFT(reporting_period, 4)
         ORDER BY year
     """
     results = db.fetch_query(query, (company_id,))
@@ -213,7 +213,7 @@ def get_yearly_emissions_by_scope(company_id: int) -> List[Dict[str, Any]]:
     
     query = """
         SELECT 
-            YEAR(ed.created_at) as year,
+            LEFT(ed.reporting_period, 4) as year,
             s.scope_number,
             s.scope_name,
             SUM(ed.co2_equivalent)/1000 as total_emissions
@@ -222,7 +222,7 @@ def get_yearly_emissions_by_scope(company_id: int) -> List[Dict[str, Any]]:
         JOIN ghg_categories c ON es.category_id = c.id
         JOIN ghg_scopes s ON c.scope_id = s.id
         WHERE ed.company_id = %s
-        GROUP BY YEAR(ed.created_at), s.scope_number, s.scope_name
+        GROUP BY LEFT(ed.reporting_period, 4), s.scope_number, s.scope_name
         ORDER BY year, s.scope_number
     """
     results = db.fetch_query(query, (company_id,))
@@ -251,9 +251,9 @@ def get_current_year_emissions(company_id: int, year: Optional[int] = None) -> f
     query = """
         SELECT SUM(co2_equivalent)/1000 as total
         FROM emissions_data
-        WHERE company_id = %s AND YEAR(created_at) = %s
+        WHERE company_id = %s AND reporting_period LIKE %s
     """
-    result = db.fetch_one(query, (company_id, year))
+    result = db.fetch_one(query, (company_id, f"{year}%"))
     return float(result[0]) if result and result[0] else 0.0
 
 
