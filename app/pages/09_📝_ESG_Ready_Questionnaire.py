@@ -104,14 +104,17 @@ def init_iesg():
     for key, val in defaults.items():
         if key not in st.session_state:
             st.session_state[key] = val
+        # Ensure string inputs are actually strings (fix for NoneType error)
+        elif val == '' and st.session_state[key] is None:
+            st.session_state[key] = ''
 
     # If the user is associated with a company, autofill company name and email
     if st.session_state.get('company_id'):
         company = get_company_info(st.session_state.company_id)
         if company:
-            st.session_state['iesg_company_name'] = company.get('company_name', '')
+            st.session_state['iesg_company_name'] = str(company.get('company_name') or '')
             # cache uses 'contact_email' key for company email
-            st.session_state['iesg_email'] = company.get('contact_email', company.get('email', ''))
+            st.session_state['iesg_email'] = str(company.get('contact_email') or company.get('email') or '')
 
 init_iesg()
 
