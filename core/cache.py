@@ -250,6 +250,16 @@ def clear_emissions_cache():
     get_system_statistics.clear()  # Admin panel stats
     get_recent_activity.clear()  # Admin panel activity
     get_all_companies_with_stats.clear()  # Company stats
+    get_available_years.clear()
+    
+    # Clear analytics caches
+    get_combined_analytics.clear()
+    get_scope_breakdown_by_source.clear()
+    get_temporal_trend_for_scope.clear()
+    get_multi_year_emissions.clear() # Multi-year view
+    get_sedg_ghg_data.clear() # SEDG Report
+    get_baseline_emissions.clear() # Baseline emissions might change if data is added for baseline year
+
 
 
 @st.cache_data(ttl=300)  # Cache for 5 minutes
