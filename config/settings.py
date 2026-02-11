@@ -28,7 +28,8 @@ class Config:
             'user': self.DB_USER,
             'password': self.DB_PASSWORD,
             'database': self.DB_NAME,
-            'port': self.DB_PORT
+            'port': self.DB_PORT,
+            'ssl_disabled': self.DB_SSL_DISABLED
         }
 
 config = Config()
