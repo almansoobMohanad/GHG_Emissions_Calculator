@@ -14,7 +14,7 @@ from core.authentication import init_session_state
 
 # Constants
 PAGE_CONFIG = {
-    "page_title": "GHG Emissions Calculator",
+    "page_title": "Sustainability Monitoring Hub",
     "page_icon": "🌱",
     "layout": "wide",
     "initial_sidebar_state": "collapsed"
