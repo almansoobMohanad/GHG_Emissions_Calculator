@@ -3,6 +3,7 @@ Geocode existing companies that don't have coordinates yet.
 This script will find all companies with NULL latitude/longitude and geocode their addresses.
 """
 import sys
+import time
 from pathlib import Path
 
 # Add parent directory to path
@@ -71,6 +72,10 @@ def geocode_existing_companies(filter_all=False):
         
         for idx, (company_id, company_name, address) in enumerate(companies, 1):
             try:
+                # Add delay to respect Nominatim rate limit (1 req/sec)
+                if idx > 1:
+                    time.sleep(1.5)
+
                 logger.info(f"[{idx}/{len(companies)}] Processing: {company_name}")
                 logger.info(f"         Address: {address[:80]}")
                 

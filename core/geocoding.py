@@ -16,15 +16,22 @@ def _get_geocoder():
     global _geocoder
     if _geocoder is None:
         try:
-            from geopy.geocoders import Nominatim
+            from geopy.geocoders import Nominatim, ArcGIS
             from geopy.exc import GeocoderTimedOut, GeocoderServiceError
             
-            # Use Nominatim (OpenStreetMap) - free and reliable
-            _geocoder = Nominatim(
-                user_agent="ghg_emissions_calculator",
-                timeout=10
-            )
-            logger.info("✅ Geocoder initialized successfully")
+            # Try ArcGIS first (more reliable, higher limits)
+            try:
+                _geocoder = ArcGIS(timeout=10)
+                logger.info("✅ Geocoder (ArcGIS) initialized successfully")
+            except Exception as e:
+                logger.warning(f"⚠️ ArcGIS failed: {e}. Falling back to Nominatim.")
+                # Fallback to Nominatim (OpenStreetMap)
+                _geocoder = Nominatim(
+                    user_agent="sustainability_monitoring_hub_v2",
+                    timeout=10
+                )
+                logger.info("✅ Geocoder (Nominatim) initialized successfully")
+
         except ImportError:
             logger.error("❌ geopy not installed. Run: pip install geopy")
             _geocoder = False
