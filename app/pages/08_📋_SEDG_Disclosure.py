@@ -1,6 +1,7 @@
 """
 SEDG Disclousre - Simplified ESG Disclosure Guide Report Generator
 Complete implementation matching official SEDG v2 template with ALL fields
+Multi-session persistence with debounced auto-save
 """
 import streamlit as st
 import sys
@@ -13,6 +14,7 @@ from core.permissions import check_page_permission, show_permission_badge
 from core.cache import get_company_info, get_emissions_summary, get_sedg_ghg_data
 from core.sedg_pdf import generate_sedg_pdf
 from components.company_verification import enforce_company_verification
+from core.sedg_management import SEDGAutoSave, initialize_sedg_form_session, show_sedg_unsaved_warning
 
 # Check permissions
 check_page_permission('08_📋_SEDG_Disclosure.py')
@@ -29,6 +31,14 @@ if status == 'no_company':
 with st.sidebar:
     show_permission_badge()
     st.write(f"**User:** {st.session_state.username}")
+    
+    # Initialize auto-save system
+    auto_save = SEDGAutoSave()
+    auto_save.init_session_state()
+    
+    # Show save status indicator
+    auto_save.show_save_indicator(position='sidebar')
+    
     if st.button("🚪 Logout", type="secondary", use_container_width=True):
         for key in list(st.session_state.keys()):
             del st.session_state[key]
@@ -43,7 +53,7 @@ if not st.session_state.company_id:
     st.error("❌ No company assigned.")
     st.stop()
 
-# Initialize session state with complete SEDG fields
+# Initialize session state with complete SEDG fields FIRST (before any widgets)
 def init_sedg():
     prefix = 'sedg_'
     defaults = {
@@ -218,6 +228,16 @@ if not company:
     st.error("❌ Unable to load company information.")
     st.stop()
 
+# Load SEDG form from database BEFORE creating widgets
+initialize_sedg_form_session()
+
+# Callback for period change to reload form
+def on_period_change():
+    """Reload form when user changes disclosure period"""
+    if 'sedg_initialized' in st.session_state:
+        del st.session_state['sedg_initialized']
+    st.session_state['sedg_has_changes'] = False
+
 # General Info
 st.header("📊 General Information")
 st.info("ℹ️ Auto-filled from your company profile")
@@ -233,8 +253,23 @@ with col1:
 with col2:
     st.selectbox("Disclosure Period", 
                 options=[str(y) for y in range(datetime.now().year, datetime.now().year-5, -1)],
-                key='sedg_period')
+                key='sedg_period',
+                on_change=on_period_change)
     disclosure_date = st.date_input("Date of Disclosure", datetime.now())
+
+# Show form status after loading
+if st.session_state.get('sedg_form_loaded', False):
+    st.info(
+        "📂 **Form loaded from previous session** - Your progress has been restored. "
+        "Continue editing and click **💾 Save** when done.",
+        icon="ℹ️"
+    )
+else:
+    st.info(
+        "📝 **New form** - This is a fresh SEDG disclosure form. "
+        "Your progress will be saved automatically.",
+        icon="📝"
+    )
     
 col3, col4 = st.columns(2)
 with col3:
@@ -657,14 +692,50 @@ with tab3:
                     key='sedg_g51_privacy_nature',
                     placeholder="Describe or enter 'None'", height=80)
 
-# DOWNLOAD
+# ACTIONS
 st.divider()
-st.header("📥 Generate Report")
+st.header("💾 Save & Generate Report")
 
-col1, col2, col3 = st.columns([1, 2, 1])
+# Show unsaved warning if needed
+show_sedg_unsaved_warning()
+
+# Save & Submit & Download buttons
+col1, col2, col3 = st.columns(3)
+
+with col1:
+    if st.button("💾 Save SEDG Form", type="primary", use_container_width=True):
+        with st.spinner("Saving..."):
+            success = auto_save.manual_save(
+                company_id=st.session_state.company_id,
+                disclosure_period=st.session_state.sedg_period,
+                reporting_year=int(st.session_state.sedg_period.split('-')[0]),
+                user_id=st.session_state.user_id
+            )
+            if success:
+                st.success("✅ SEDG form saved successfully!")
+            else:
+                st.error("❌ Failed to save SEDG form")
 
 with col2:
-    if st.button("📥 Download SEDG Report (PDF)", type="primary", use_container_width=True):
+    if st.button("📤 Submit Disclosure", type="secondary", use_container_width=True):
+        if not st.session_state.get('sedg_has_changes', False):
+            with st.spinner("Submitting..."):
+                from core.sedg_management import SEDGManager
+                manager = SEDGManager()
+                success = manager.submit_sedg_disclosure(
+                    company_id=st.session_state.company_id,
+                    disclosure_period=st.session_state.sedg_period,
+                    user_id=st.session_state.user_id
+                )
+                if success:
+                    st.success("✅ SEDG disclosure submitted!")
+                else:
+                    st.error("❌ Failed to submit disclosure")
+        else:
+            st.warning("⚠️ Please save your changes before submitting")
+
+with col3:
+    if st.button("📥 Download PDF Report", type="secondary", use_container_width=True):
         try:
             # Collect all data from session state
             sedg_data = {k.replace('sedg_', ''): v for k, v in st.session_state.items() if k.startswith('sedg_')}
@@ -675,10 +746,20 @@ with col2:
             filename = f"SEDG_Disclosure_{company['company_name'].replace(' ', '_')}_{reporting_period}.pdf"
             
             st.download_button("📥 Download PDF", pdf_buffer, filename, "application/pdf", use_container_width=True)
-            st.success("✅ PDF generated!")
+            st.success("✅ PDF ready for download!")
             
         except ImportError:
             st.error("❌ Install ReportLab: `pip install reportlab`")
         except Exception as e:
             st.error(f"❌ Error: {str(e)}")
             st.exception(e)
+
+st.divider()
+st.info(
+    "💡 **Form Tips:**\n"
+    "- Your progress is **auto-saved** every 5 seconds of inactivity\n"
+    "- Click **💾 Save** anytime to manually save your work\n"
+    "- Use **📤 Submit** when your disclosure is complete\n"
+    "- Close the app anytime - your data is safe!",
+    icon="ℹ️"
+)
