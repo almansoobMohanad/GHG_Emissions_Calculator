@@ -364,6 +364,27 @@ class DatabaseSetup:
                     INDEX idx_scope (scope_number),
                     CONSTRAINT chk_scope_number CHECK (scope_number IN (1, 2, 3))
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Tracks data coverage evolution over time'
+            """,
+            
+            'sedg_disclosures': """
+                CREATE TABLE IF NOT EXISTS sedg_disclosures (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    company_id INT NOT NULL,
+                    disclosure_period VARCHAR(20) NOT NULL COMMENT 'e.g., 2024, 2023-2024',
+                    reporting_year INT NOT NULL COMMENT 'Year of reporting',
+                    status ENUM('draft', 'in_progress', 'completed', 'submitted') DEFAULT 'draft' COMMENT 'Disclosure status',
+                    sedg_data JSON COMMENT 'All SEDG disclosure fields stored as JSON (~100 fields)',
+                    submission_date DATETIME NULL COMMENT 'When disclosure was officially submitted',
+                    last_modified_by INT NULL COMMENT 'User ID who last edited this disclosure',
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE,
+                    FOREIGN KEY (last_modified_by) REFERENCES users(id) ON DELETE SET NULL,
+                    UNIQUE KEY unique_company_period (company_id, disclosure_period),
+                    INDEX idx_company_status (company_id, status),
+                    INDEX idx_updated (updated_at),
+                    INDEX idx_year (reporting_year)
+                ) ENGINE=InnoDB ROW_FORMAT=COMPRESSED DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='SEDG v2 disclosure forms with multi-session edit support'
             """
         }
         
@@ -525,7 +546,8 @@ class DatabaseSetup:
             print("  2. Login with: admin / admin123")
             print("  3. Change admin password immediately!")
             print("\n📊 Database includes:")
-            print("  - 14 tables created")
+            print("  - 15 tables created")
+            print("  - SEDG v2 Disclosure form with multi-session persistence")
             print("  - Baseline year tracking for companies")
             print("  - Emissions coverage tracking over time")
             print("  - GHG Scopes (1, 2, 3)")
