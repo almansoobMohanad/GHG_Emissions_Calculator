@@ -32,13 +32,6 @@ with st.sidebar:
     show_permission_badge()
     st.write(f"**User:** {st.session_state.username}")
     
-    # Initialize auto-save system
-    auto_save = SEDGAutoSave()
-    auto_save.init_session_state()
-    
-    # Show save status indicator
-    auto_save.show_save_indicator(position='sidebar')
-    
     if st.button("🚪 Logout", type="secondary", use_container_width=True):
         for key in list(st.session_state.keys()):
             del st.session_state[key]
@@ -228,15 +221,27 @@ if not company:
     st.error("❌ Unable to load company information.")
     st.stop()
 
-# Load SEDG form from database BEFORE creating widgets
-initialize_sedg_form_session()
+# Detect page navigation using script path
+import __main__
+current_script = getattr(__main__, '__file__', 'unknown')
+last_script = st.session_state.get('last_script_path')
+
+# If coming from a different page OR first visit, reload from database
+if last_script != current_script:
+    # Update last script path
+    st.session_state.last_script_path = current_script
+    # Load from database
+    initialize_sedg_form_session()
 
 # Callback for period change to reload form
 def on_period_change():
     """Reload form when user changes disclosure period"""
-    if 'sedg_initialized' in st.session_state:
-        del st.session_state['sedg_initialized']
-    st.session_state['sedg_has_changes'] = False
+    # Clear all SEDG keys to force fresh load for new period
+    keys_to_clear = [k for k in st.session_state.keys() if k.startswith('sedg_') and k != 'sedg_period']
+    for key in keys_to_clear:
+        del st.session_state[key]
+    # Reload from database with new period
+    initialize_sedg_form_session()
 
 # General Info
 st.header("📊 General Information")
@@ -266,7 +271,7 @@ if st.session_state.get('sedg_form_loaded', False):
     )
 else:
     st.info(
-        "📝 **New form** - This is a fresh SEDG disclosure form. "
+        "**New form** - This is a fresh SEDG disclosure form. "
         "Your progress will be saved automatically.",
         icon="📝"
     )
@@ -699,6 +704,10 @@ st.header("💾 Save & Generate Report")
 # Show unsaved warning if needed
 show_sedg_unsaved_warning()
 
+# Initialize save helper (manual save only, no auto-save)
+auto_save = SEDGAutoSave()
+auto_save.init_session_state()
+
 # Save & Submit & Download buttons
 col1, col2, col3 = st.columns(3)
 
@@ -757,9 +766,9 @@ with col3:
 st.divider()
 st.info(
     "💡 **Form Tips:**\n"
-    "- Your progress is **auto-saved** every 5 seconds of inactivity\n"
-    "- Click **💾 Save** anytime to manually save your work\n"
+    "- Click **💾 Save SEDG Form** to save your progress to the database\n"
     "- Use **📤 Submit** when your disclosure is complete\n"
-    "- Close the app anytime - your data is safe!",
+    "- Your data persists across sessions after saving\n"
+    "- Always save before leaving the page!",
     icon="ℹ️"
 )

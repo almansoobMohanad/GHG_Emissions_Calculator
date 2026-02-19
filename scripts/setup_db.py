@@ -385,6 +385,28 @@ class DatabaseSetup:
                     INDEX idx_updated (updated_at),
                     INDEX idx_year (reporting_year)
                 ) ENGINE=InnoDB ROW_FORMAT=COMPRESSED DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='SEDG v2 disclosure forms with multi-session edit support'
+            """,
+            
+            'iesg_responses': """
+                CREATE TABLE IF NOT EXISTS iesg_responses (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    company_id INT NOT NULL,
+                    assessment_period VARCHAR(20) NOT NULL COMMENT 'e.g., 2024, 2023-2024',
+                    status ENUM('draft', 'in_progress', 'completed', 'submitted') DEFAULT 'draft' COMMENT 'Response status',
+                    response_data JSON COMMENT 'All ESG questionnaire response fields stored as JSON (~50 fields)',
+                    completion_score INT NULL COMMENT 'Completion percentage (0-100)',
+                    esg_readiness_score INT NULL COMMENT 'ESG readiness score calculated from responses',
+                    submission_date DATETIME NULL COMMENT 'When responses were officially submitted',
+                    last_modified_by INT NULL COMMENT 'User ID who last edited these responses',
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE,
+                    FOREIGN KEY (last_modified_by) REFERENCES users(id) ON DELETE SET NULL,
+                    UNIQUE KEY unique_company_assessment (company_id, assessment_period),
+                    INDEX idx_company_status (company_id, status),
+                    INDEX idx_updated (updated_at),
+                    INDEX idx_score (esg_readiness_score)
+                ) ENGINE=InnoDB ROW_FORMAT=COMPRESSED DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='ESG Ready questionnaire responses with multi-session edit support'
             """
         }
         
@@ -546,8 +568,9 @@ class DatabaseSetup:
             print("  2. Login with: admin / admin123")
             print("  3. Change admin password immediately!")
             print("\n📊 Database includes:")
-            print("  - 15 tables created")
+            print("  - 16 tables created")
             print("  - SEDG v2 Disclosure form with multi-session persistence")
+            print("  - ESG Ready Questionnaire with multi-session persistence")
             print("  - Baseline year tracking for companies")
             print("  - Emissions coverage tracking over time")
             print("  - GHG Scopes (1, 2, 3)")

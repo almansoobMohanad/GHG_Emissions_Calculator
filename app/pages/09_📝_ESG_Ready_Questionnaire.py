@@ -13,6 +13,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from core.permissions import check_page_permission, show_permission_badge
 from core.cache import get_company_info
 from components.company_verification import enforce_company_verification
+from core.iesg_management import IESGAutoSave, initialize_iesg_responses_session, show_iesg_unsaved_warning
 
 # Check permissions
 check_page_permission('09_📝_ESG_Ready_Questionnaire.py')
@@ -29,6 +30,7 @@ if status == 'no_company':
 with st.sidebar:
     show_permission_badge()
     st.write(f"**User:** {st.session_state.username}")
+    
     if st.button("🚪 Logout", type="secondary", use_container_width=True):
         for key in list(st.session_state.keys()):
             del st.session_state[key]
@@ -39,84 +41,126 @@ st.markdown("**ESG Readiness Self-Assessment Programme**")
 st.info("ℹ️ Complete this assessment locally. Your data stays private and you can download a PDF of your responses.")
 st.divider()
 
-# Initialize session state
-def init_iesg():
+# Debug info (remove after testing)
+with st.expander("🔍 Debug Info"):
+    st.write(f"iesg_responses_loaded: {st.session_state.get('iesg_responses_loaded', 'NOT SET')}")
+    st.write(f"Company ID: {st.session_state.get('company_id', 'NOT SET')}")
+    iesg_keys = [k for k in st.session_state.keys() if k.startswith('iesg_')]
+    st.write(f"Number of iesg_ keys in session: {len(iesg_keys)}")
+    
+    # Check what the manager actually returned
+    from core.iesg_management import IESGManager
+    manager = IESGManager()
+    test_load = manager.load_iesg_responses(st.session_state.get('company_id'), "2024")
+    st.write(f"Raw database response:")
+    st.json(test_load)
+    
+    if len(iesg_keys) > 0:
+        st.write(f"Sample values from session state:")
+        st.write(f"- iesg_company_name: {st.session_state.get('iesg_company_name', 'NOT SET')}")
+        st.write(f"- iesg_phone: {st.session_state.get('iesg_phone', 'NOT SET')}")
+        st.write(f"- iesg_q8_maturity: {st.session_state.get('iesg_q8_maturity', 'NOT SET')}")
+        st.write(f"- iesg_q17_carbon: {st.session_state.get('iesg_q17_carbon', 'NOT SET')}")
+
+# Initialize session state defaults FIRST (before database load)
+def init_iesg_defaults():
+    """Initialize default values for all fields"""
     prefix = 'iesg_'
     defaults = {
         # Section A: About The Company
         f'{prefix}company_name': '',
         f'{prefix}email': '',
         f'{prefix}phone': '',
-        f'{prefix}location': 'W.P Kuala Lumpur',  # Keep this as is
-        f'{prefix}subsector': 'E&E',  # Keep this as is
+        f'{prefix}location': 'W.P Kuala Lumpur',
+        f'{prefix}subsector': 'E&E',
         f'{prefix}subsector_other': '',
-        f'{prefix}company_size': None,  # Changed from first option
-        f'{prefix}company_type': None,  # Changed from first option
+        f'{prefix}company_size': None,
+        f'{prefix}company_type': None,
         f'{prefix}reporting_standard': [],
         f'{prefix}reporting_standard_other': '',
         f'{prefix}none_reason': [],
         f'{prefix}none_reason_other': '',
         
         # Section B: General Understanding of ESG
-        f'{prefix}q8_maturity': None,  # Changed
+        f'{prefix}q8_maturity': None,
         f'{prefix}q9_stakeholders': [],
-        f'{prefix}q10_business_case': None,  # Changed
-        f'{prefix}q11_esg_goals': None,  # Changed
-        f'{prefix}q12_esg_leadership': None,  # Changed
-        f'{prefix}q13_esg_reporting': None,  # Changed
-        f'{prefix}q14_data_understanding': None,  # Changed
-        f'{prefix}q15_esg_elements': None,  # Changed
-        f'{prefix}q16_validation': None,  # Changed
+        f'{prefix}q10_business_case': None,
+        f'{prefix}q11_esg_goals': None,
+        f'{prefix}q12_esg_leadership': None,
+        f'{prefix}q13_esg_reporting': None,
+        f'{prefix}q14_data_understanding': None,
+        f'{prefix}q15_esg_elements': None,
+        f'{prefix}q16_validation': None,
         
         # Section C: Environment
-        f'{prefix}q17_carbon': None,  # Changed
-        f'{prefix}q18_ghg': None,  # Changed
-        f'{prefix}q19_water': None,  # Changed
-        f'{prefix}q20_waste': None,  # Changed
-        f'{prefix}q21_wastewater': None,  # Changed
-        f'{prefix}q22_energy': None,  # Changed
-        f'{prefix}q23_biodiversity': None,  # Changed
-        f'{prefix}q24_eco_materials': None,  # Changed
-        f'{prefix}q25_reforestation': None,  # Changed
+        f'{prefix}q17_carbon': None,
+        f'{prefix}q18_ghg': None,
+        f'{prefix}q19_water': None,
+        f'{prefix}q20_waste': None,
+        f'{prefix}q21_wastewater': None,
+        f'{prefix}q22_energy': None,
+        f'{prefix}q23_biodiversity': None,
+        f'{prefix}q24_eco_materials': None,
+        f'{prefix}q25_reforestation': None,
         
         # Section D: Social
-        f'{prefix}q26_employee_involvement': None,  # Changed
-        f'{prefix}q27_domestic_labour': None,  # Changed
-        f'{prefix}q28_intl_labour': None,  # Changed
-        f'{prefix}q29_equal_employment': None,  # Changed
-        f'{prefix}q30_min_wage': None,  # Changed
-        f'{prefix}q31_health_safety': None,  # Changed
-        f'{prefix}q32_grievance': None,  # Changed
-        f'{prefix}q33_upskilling': None,  # Changed
-        f'{prefix}q34_community': None,  # Changed
+        f'{prefix}q26_employee_involvement': None,
+        f'{prefix}q27_domestic_labour': None,
+        f'{prefix}q28_intl_labour': None,
+        f'{prefix}q29_equal_employment': None,
+        f'{prefix}q30_min_wage': None,
+        f'{prefix}q31_health_safety': None,
+        f'{prefix}q32_grievance': None,
+        f'{prefix}q33_upskilling': None,
+        f'{prefix}q34_community': None,
         
         # Section E: Governance
-        f'{prefix}q35_board_leadership': None,  # Changed
-        f'{prefix}q36_board_awareness': None,  # Changed
-        f'{prefix}q37_strategy': None,  # Changed
-        f'{prefix}q38_code_conduct': None,  # Changed
-        f'{prefix}q39_anti_corruption': None,  # Changed
-        f'{prefix}q40_whistleblower': None,  # Changed
-        f'{prefix}q41_accounting': None,  # Changed
-        f'{prefix}q42_data_privacy': None,  # Changed
+        f'{prefix}q35_board_leadership': None,
+        f'{prefix}q36_board_awareness': None,
+        f'{prefix}q37_strategy': None,
+        f'{prefix}q38_code_conduct': None,
+        f'{prefix}q39_anti_corruption': None,
+        f'{prefix}q40_whistleblower': None,
+        f'{prefix}q41_accounting': None,
+        f'{prefix}q42_data_privacy': None,
     }
     
+    # Only set defaults for keys that don't exist
     for key, val in defaults.items():
         if key not in st.session_state:
             st.session_state[key] = val
-        # Ensure string inputs are actually strings (fix for NoneType error)
-        elif val == '' and st.session_state[key] is None:
-            st.session_state[key] = ''
 
-    # If the user is associated with a company, autofill company name and email
-    if st.session_state.get('company_id'):
-        company = get_company_info(st.session_state.company_id)
-        if company:
-            st.session_state['iesg_company_name'] = str(company.get('company_name') or '')
-            # cache uses 'contact_email' key for company email
-            st.session_state['iesg_email'] = str(company.get('contact_email') or company.get('email') or '')
+# Step 1: Initialize defaults first
+init_iesg_defaults()
 
-init_iesg()
+# Step 2: Load from database and OVERWRITE session state
+# This should happen on every page load to ensure data persists
+company_id = st.session_state.get('company_id')
+if company_id:
+    # This function should handle everything:
+    # 1. Load from database if data exists
+    # 2. Set defaults if no data exists
+    # 3. Set all iesg_* keys in session state
+    data_loaded = initialize_iesg_responses_session(
+        company_id=company_id,
+        assessment_period="2024"
+    )
+    
+    # Verify we actually have data by checking key fields
+    has_actual_data = any([
+        st.session_state.get('iesg_company_name', ''),
+        st.session_state.get('iesg_phone', ''),
+        st.session_state.get('iesg_q8_maturity') is not None,
+    ])
+    
+    if data_loaded and has_actual_data:
+        st.success("✅ **Form loaded from database** - Your previous responses have been restored.")
+    elif not has_actual_data:
+        st.warning("⚠️ **Data load issue detected** - Check Debug Info below")
+    else:
+        st.info("📋 **New form** - Start filling in your ESG assessment.")
+else:
+    st.warning("⚠️ No company ID found in session state")
 
 # Progress tracking
 def calculate_progress():
@@ -336,7 +380,7 @@ with tab2:
     st.header("📚 Section B: General Understanding of ESG")
     
     # Q8: Maturity
-    st.subheader("8. How mature is your organization’s sustainability strategy? *")
+    st.subheader("8. How mature is your organization's sustainability strategy? *")
     maturity_options = [
         "We have not started our sustainability journey yet",
         "We have started, but we should be doing more",
@@ -988,7 +1032,7 @@ def calculate_score():
     
     # Calculate score for each question (Q8, Q10-Q42)
     for key, options in score_map.items():
-        answer = st.session_state.get(key, None)  # Changed to None
+        answer = st.session_state.get(key, None)
         # Only score if answer is not None
         if answer and answer in options:
             score += options.index(answer)
@@ -1007,20 +1051,81 @@ def calculate_score():
 # PDF GENERATION & DOWNLOAD
 # ============================================================================
 st.divider()
-st.header("📥 Download Your Assessment")
+st.header("📥 Actions & Download")
 
-# Calculate and display score
-col1, col2, col3 = st.columns(3)
+# Show unsaved warning if applicable
+show_iesg_unsaved_warning()
+
+# Initialize manual save helper (no auto-save, user must click save button)
+auto_save = IESGAutoSave(st.session_state.get('company_id'), assessment_period="2024")
+
+# Collect all response data for saving
+def get_all_iesg_responses():
+    """Collect all iesg_* fields from session state, excluding metadata"""
+    responses = {}
+    # List of metadata keys to exclude
+    metadata_keys = {
+        'iesg_initialized', 'iesg_responses_loaded', 'iesg_form_status', 
+        'iesg_completion_score', 'iesg_unsaved_changes', 'iesg_last_save', 
+        'iesg_auto_save_status', 'iesg_score', 'iesg_max_score', 'iesg_percentage'
+    }
+    
+    for key, value in st.session_state.items():
+        if key.startswith('iesg_') and key not in metadata_keys and not key.startswith('iesg_responses_') and not key.startswith('iesg_unsaved_') and not key.startswith('iesg_form_'):
+            # Remove the 'iesg_' prefix for database storage
+            clean_key = key.replace('iesg_', '')
+            responses[clean_key] = value
+    return responses
+
+# Action buttons row
+col1, col2, col3, col4 = st.columns([1, 1, 1, 1])
+
+with col1:
+    if st.button("💾 Save Responses", type="secondary", use_container_width=True):
+        progress_score = calculate_progress()
+        responses = get_all_iesg_responses()
+        success = auto_save.manual_save(responses, completion_score=progress_score)
+        if success:
+            st.rerun()
+
 with col2:
-    if st.button("🎯 Calculate ESG Readiness Score", type="secondary", use_container_width=True):
+    if st.button("📤 Submit Assessment", type="primary", use_container_width=True):
+        progress_score = calculate_progress()
+        responses = get_all_iesg_responses()
+        
+        # Calculate final score for submission
+        final_score, max_score, percentage = calculate_score()
+        
+        success = auto_save.submit_responses(
+            responses, 
+            completion_score=progress_score,
+            esg_readiness_score=int(percentage)
+        )
+        
+        if success:
+            st.success("✅ Assessment submitted successfully!")
+            st.session_state.iesg_form_status = 'submitted'
+        else:
+            st.error("❌ Failed to submit assessment. Please try again.")
+
+with col3:
+    if st.button("🎯 Calculate Score", type="secondary", use_container_width=True):
         score, max_score, percentage = calculate_score()
         st.session_state.iesg_score = score
         st.session_state.iesg_max_score = max_score
         st.session_state.iesg_percentage = percentage
 
+with col4:
+    pass
+
+st.divider()
+
 # Display score if calculated
 if 'iesg_score' in st.session_state:
-    st.success(f"### 🎯 Your ESG Readiness Score: {st.session_state.iesg_score}/{st.session_state.iesg_max_score} ({st.session_state.iesg_percentage:.1f}%)")
+    score_col1, score_col2, score_col3 = st.columns(3)
+    with score_col2:
+        st.success(f"### 🎯 ESG Readiness Score: {st.session_state.iesg_score}/{st.session_state.iesg_max_score}")
+        st.metric("Score Percentage", f"{st.session_state.iesg_percentage:.1f}%")
     
     # Score interpretation
     if st.session_state.iesg_percentage >= 80:
@@ -1034,6 +1139,8 @@ if 'iesg_score' in st.session_state:
 
 st.divider()
 
+# PDF Download section
+st.header("📥 Download PDF Report")
 col1, col2, col3 = st.columns([1, 2, 1])
 
 with col2:
@@ -1067,11 +1174,23 @@ with col2:
             st.error(f"❌ Error generating PDF: {str(e)}")
             st.exception(e)
 
-# Footer
+# Form tips info box
+with st.expander("💡 Data Persistence Tips"):
+    st.markdown("""
+    - **Auto-Load**: Your data automatically loads from the database every time you visit this page
+    - **Manual Save**: Click \"💾 Save Responses\" to save your progress to the database
+    - **Submit**: Click \"📤 Submit Assessment\" to finalize your submission
+    - **Download**: Generate and download a PDF report of your assessment
+    - **Multi-Session**: Your data persists across sessions - close and reopen without losing progress (after saving)
+    - **Remember**: Always click \"💾 Save Responses\" before leaving the page
+    """)
+
 st.divider()
+
+# Footer
 st.markdown("""
 <div style='text-align: center; color: #666; font-size: 0.9em;'>
     <p>ESG Ready Questionnaire | Ministry of Investment, Trade and Industry (MITI)</p>
-    <p>Your data is stored locally and never sent to external servers.</p>
+    <p>Your data is stored persistently in the database and never sent to external servers.</p>
 </div>
 """, unsafe_allow_html=True)
