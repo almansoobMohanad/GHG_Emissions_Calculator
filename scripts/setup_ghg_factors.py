@@ -111,7 +111,7 @@ class GHGFactorsSetup:
             
             # Scope 2 Categories
             (scopes[2], 'S2-ELECTRICITY', 'Purchased Electricity', 'Electricity purchased from the grid or suppliers'),
-            (scopes[2], 'S2-HEAT-STEAM', 'Purchased Heat and Steam', 'District heating, cooling, or steam'),
+            (scopes[2], 'S2-HEAT-STEAM', 'Purchased Heat, Steam, and Cooling', 'District heating, cooling, or steam'),
             
             # Scope 3 Categories (following GHG Protocol categories)
             (scopes[3], 'S3-01-GOODS', 'Purchased Goods and Services', 'Upstream emissions from purchased goods and services'),
@@ -129,8 +129,6 @@ class GHGFactorsSetup:
             (scopes[3], 'S3-13-DOWNSTREAM-ASSETS', 'Downstream Leased Assets', 'Operation of assets owned and leased to other entities'),
             (scopes[3], 'S3-14-FRANCHISES', 'Franchises', 'Operation of franchises'),
             (scopes[3], 'S3-15-INVESTMENTS', 'Investments', 'Operation of investments'),
-            (scopes[3], 'S3-HOTEL', 'Hotel Stays', 'Accommodation in hotels'),
-            (scopes[3], 'S3-MATERIALS', 'Materials', 'Material and product manufacturing'),
         ]
         
         query = """
@@ -173,7 +171,6 @@ class GHGFactorsSetup:
             'S3-07-COMMUTING', 'S3-08-UPSTREAM-ASSETS', 'S3-09-DOWNSTREAM-TRANSPORT',
             'S3-10-PROCESSING', 'S3-11-USE-PRODUCTS', 'S3-12-END-LIFE', 
             'S3-13-DOWNSTREAM-ASSETS', 'S3-14-FRANCHISES', 'S3-15-INVESTMENTS',
-            'S3-HOTEL', 'S3-MATERIALS'
         ]
         
         missing_codes = [code for code in expected_codes if code not in categories]
@@ -422,13 +419,13 @@ class GHGFactorsSetup:
             (categories['S3-07-COMMUTING'], 'S3-EC-031', 'Walking', 0.00000, 'kg CO2e/km', 
              'Walking (zero emissions)'),
             
-            # === SCOPE 3: HOTEL STAYS ===
+            # === SCOPE 3: BUSINESS TRAVEL - HOTEL STAYS ===
             
-            (categories['S3-HOTEL'], 'S3-H-001', 'Hotel Stay - UK (average)', 18.49000, 'kg CO2e/room night', 
+            (categories['S3-06-BUSINESS-TRAVEL'], 'S3-H-001', 'Hotel Stay - UK (average)', 18.49000, 'kg CO2e/room night', 
              'Average UK hotel room per night'),
-            (categories['S3-HOTEL'], 'S3-H-002', 'Hotel Stay - Europe (average)', 24.69000, 'kg CO2e/room night', 
+            (categories['S3-06-BUSINESS-TRAVEL'], 'S3-H-002', 'Hotel Stay - Europe (average)', 24.69000, 'kg CO2e/room night', 
              'Average European hotel room per night'),
-            (categories['S3-HOTEL'], 'S3-H-003', 'Hotel Stay - Rest of World (average)', 39.09000, 'kg CO2e/room night', 
+            (categories['S3-06-BUSINESS-TRAVEL'], 'S3-H-003', 'Hotel Stay - Rest of World (average)', 39.09000, 'kg CO2e/room night', 
              'Average international hotel room per night'),
             
             # === SCOPE 3: WASTE ===
@@ -454,31 +451,31 @@ class GHGFactorsSetup:
             (categories['S3-05-WASTE'], 'S3-W-013', 'Glass - Recycled', 0.02123, 'kg CO2e/kg', 
              'Glass recycling'),
             
-            # === SCOPE 3: MATERIALS (Common materials) ===
+            # === SCOPE 3: PURCHASED GOODS AND SERVICES - MATERIALS ===
             
-            (categories['S3-MATERIALS'], 'S3-M-001', 'Paper - Average', 0.91044, 'kg CO2e/kg', 
+            (categories['S3-01-GOODS'], 'S3-M-001', 'Paper - Average', 0.91044, 'kg CO2e/kg', 
              'Average paper products'),
-            (categories['S3-MATERIALS'], 'S3-M-002', 'Cardboard - Average', 0.58967, 'kg CO2e/kg', 
+            (categories['S3-01-GOODS'], 'S3-M-002', 'Cardboard - Average', 0.58967, 'kg CO2e/kg', 
              'Average cardboard products'),
-            (categories['S3-MATERIALS'], 'S3-M-010', 'Plastics - Average', 2.53370, 'kg CO2e/kg', 
+            (categories['S3-01-GOODS'], 'S3-M-010', 'Plastics - Average', 2.53370, 'kg CO2e/kg', 
              'Average plastic products'),
-            (categories['S3-MATERIALS'], 'S3-M-011', 'PET Plastic', 2.15260, 'kg CO2e/kg', 
+            (categories['S3-01-GOODS'], 'S3-M-011', 'PET Plastic', 2.15260, 'kg CO2e/kg', 
              'PET plastic products'),
-            (categories['S3-MATERIALS'], 'S3-M-012', 'HDPE Plastic', 1.93470, 'kg CO2e/kg', 
+            (categories['S3-01-GOODS'], 'S3-M-012', 'HDPE Plastic', 1.93470, 'kg CO2e/kg', 
              'HDPE plastic products'),
-            (categories['S3-MATERIALS'], 'S3-M-013', 'PVC Plastic', 2.53370, 'kg CO2e/kg', 
+            (categories['S3-01-GOODS'], 'S3-M-013', 'PVC Plastic', 2.53370, 'kg CO2e/kg', 
              'PVC plastic products'),
-            (categories['S3-MATERIALS'], 'S3-M-020', 'Steel', 1.52890, 'kg CO2e/kg', 
+            (categories['S3-01-GOODS'], 'S3-M-020', 'Steel', 1.52890, 'kg CO2e/kg', 
              'Steel products'),
-            (categories['S3-MATERIALS'], 'S3-M-021', 'Aluminium', 8.58230, 'kg CO2e/kg', 
+            (categories['S3-01-GOODS'], 'S3-M-021', 'Aluminium', 8.58230, 'kg CO2e/kg', 
              'Aluminium products'),
-            (categories['S3-MATERIALS'], 'S3-M-030', 'Concrete', 0.13310, 'kg CO2e/kg', 
+            (categories['S3-01-GOODS'], 'S3-M-030', 'Concrete', 0.13310, 'kg CO2e/kg', 
              'Concrete'),
-            (categories['S3-MATERIALS'], 'S3-M-031', 'Cement', 0.83630, 'kg CO2e/kg', 
+            (categories['S3-01-GOODS'], 'S3-M-031', 'Cement', 0.83630, 'kg CO2e/kg', 
              'Cement'),
-            (categories['S3-MATERIALS'], 'S3-M-040', 'Glass', 0.85340, 'kg CO2e/kg', 
+            (categories['S3-01-GOODS'], 'S3-M-040', 'Glass', 0.85340, 'kg CO2e/kg', 
              'Glass products'),
-            (categories['S3-MATERIALS'], 'S3-M-050', 'Timber', 0.43640, 'kg CO2e/kg', 
+            (categories['S3-01-GOODS'], 'S3-M-050', 'Timber', 0.43640, 'kg CO2e/kg', 
              'Timber/wood products'),
             
             # === SCOPE 3: WATER ===
@@ -521,6 +518,32 @@ class GHGFactorsSetup:
              'Long-haul air freight'),
             (categories['S3-04-UPSTREAM-TRANSPORT'], 'S3-FT-031', 'Air Freight (short-haul)', 1.51300, 'kg CO2e/tonne.km', 
              'Short-haul air freight'),
+
+              # Downstream transport and distribution (same mode factors, sold products)
+              (categories['S3-09-DOWNSTREAM-TRANSPORT'], 'S3-DT-001', 'HGV - All Rigid (average)', 0.60587, 'kg CO2e/tonne.km', 
+               'Downstream transport of sold goods - heavy goods vehicle rigid'),
+              (categories['S3-09-DOWNSTREAM-TRANSPORT'], 'S3-DT-002', 'HGV - All Articulated (average)', 0.07695, 'kg CO2e/tonne.km', 
+               'Downstream transport of sold goods - heavy goods vehicle articulated'),
+              (categories['S3-09-DOWNSTREAM-TRANSPORT'], 'S3-DT-003', 'Van - Average', 0.25726, 'kg CO2e/km', 
+               'Downstream transport of sold goods - average delivery van'),
+              (categories['S3-09-DOWNSTREAM-TRANSPORT'], 'S3-DT-004', 'Van - Class I (up to 1.305 tonnes)', 0.23046, 'kg CO2e/km', 
+               'Downstream transport of sold goods - small van'),
+              (categories['S3-09-DOWNSTREAM-TRANSPORT'], 'S3-DT-005', 'Van - Class II (1.305-1.74 tonnes)', 0.24866, 'kg CO2e/km', 
+               'Downstream transport of sold goods - medium van'),
+              (categories['S3-09-DOWNSTREAM-TRANSPORT'], 'S3-DT-006', 'Van - Class III (over 1.74 tonnes)', 0.31346, 'kg CO2e/km', 
+               'Downstream transport of sold goods - large van'),
+              (categories['S3-09-DOWNSTREAM-TRANSPORT'], 'S3-DT-010', 'Cargo Ship - Average', 0.01121, 'kg CO2e/tonne.km', 
+               'Downstream transport of sold goods - average cargo ship'),
+              (categories['S3-09-DOWNSTREAM-TRANSPORT'], 'S3-DT-011', 'Cargo Ship - Bulk Carrier', 0.00626, 'kg CO2e/tonne.km', 
+               'Downstream transport of sold goods - bulk carrier ship'),
+              (categories['S3-09-DOWNSTREAM-TRANSPORT'], 'S3-DT-012', 'Cargo Ship - Container Ship', 0.01525, 'kg CO2e/tonne.km', 
+               'Downstream transport of sold goods - container ship'),
+              (categories['S3-09-DOWNSTREAM-TRANSPORT'], 'S3-DT-020', 'Freight Train', 0.02533, 'kg CO2e/tonne.km', 
+               'Downstream transport of sold goods - rail freight'),
+              (categories['S3-09-DOWNSTREAM-TRANSPORT'], 'S3-DT-030', 'Air Freight (long-haul)', 0.60200, 'kg CO2e/tonne.km', 
+               'Downstream transport of sold goods - long-haul air freight'),
+              (categories['S3-09-DOWNSTREAM-TRANSPORT'], 'S3-DT-031', 'Air Freight (short-haul)', 1.51300, 'kg CO2e/tonne.km', 
+               'Downstream transport of sold goods - short-haul air freight'),
         ]
         
         query = """
