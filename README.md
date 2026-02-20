@@ -8,10 +8,11 @@ A Streamlit-based greenhouse gas (GHG) tracking platform for companies to log ac
 - **Authentication & roles**: Login/registration with role-aware pages (admin/manager/user).
 - **Activity capture**: Add single emission entries with scoped/category/source selection and dynamic reporting periods.
 - **Bulk upload**: CSV/Excel import with validation (source code, year format, positive activity) and optional auto-verify.
+- **Dashboard analytics**: Baseline-year status, single-year and multi-year emissions comparisons.
 - **Factor management**: Activate/deactivate system/custom emission factors, add/edit/delete custom factors, scope-level bulk toggles, and history.
 - **Verification & QA**: Pages to review/verify uploaded emissions and view data dashboards.
 - **Roadmap & goals**: Reduction goals, initiatives, year-over-year trends, and progress visualization.
-- **Admin utilities**: User/company management, document requests, and SEDG/iESG readiness pages.
+- **Admin utilities**: User/company management, document requests, COSIRI repository, and SEDG/iESG readiness pages.
 
 ## Tech Stack
 - **Frontend**: Streamlit
@@ -59,6 +60,7 @@ A Streamlit-based greenhouse gas (GHG) tracking platform for companies to log ac
 - Add Activity: pages/02_➕_Add_Activity.py
 - View/Verify Data: pages/03_📊_View_Data.py, pages/04_✅_Verify_Data.py
 - Manage Emission Factors: pages/11_⚙️_Manage_Emission_Factors.py
+- COSIRI Documents: pages/12_📄_COSIRI.py
 - Roadmap Tracker: pages/13_🎯_Roadmap_Tracker.py
 - User/Company Management: pages/06_👥_User_Management.py, pages/07_🏢_Company_Management.py
 

@@ -5,7 +5,7 @@ Practical steps to run the GHG Emissions Calculator locally and in production (S
 ---
 
 ## 6.1 Prerequisites
-- Python 3.8+
+- Python 3.10+
 - MySQL 8.0+
 - Git
 - Access to `.env` values (DB host/user/password/name, secret key)
@@ -16,9 +16,9 @@ Practical steps to run the GHG Emissions Calculator locally and in production (S
 ## 6.2 Environment Variables (.env)
 ```
 # Database
-DB_HOST=ghg-1.c9260sqmwpz9.ap-southeast-1.rds.amazonaws.com
-DB_USER=admin
-DB_PASSWORD=MSFSHRDC4WD
+DB_HOST=<your-db-host>
+DB_USER=<your-db-user>
+DB_PASSWORD=<your-db-password>
 DB_NAME=ghg_emissions_calculator_db
 DB_PORT=3306
 DB_SSL_DISABLED=false
@@ -90,7 +90,7 @@ streamlit run app/main.py
 ### 6.5.2 Application Host
 Option A: VM (EC2/VM) running Streamlit directly
 - Provision VM (Ubuntu/Windows)
-- Install Python 3.8+, pip, virtualenv
+- Install Python 3.10+, pip, virtualenv
 - Pull code (git)
 - Configure `.env`
 - Create venv and install requirements

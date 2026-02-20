@@ -1,5 +1,11 @@
 # 2. Database Schema Documentation
 
+> **Implementation alignment update (2026-02-20):**
+> - The live application now references additional company baseline fields (`baseline_year`, `baseline_notes`, `baseline_set_date`, `baseline_set_by`) for dashboard analytics.
+> - `companies` may also include location coordinates (`latitude`, `longitude`) depending on migration state.
+> - `ghg_emission_sources` includes operational fields such as `source_type`, `company_id`, and `is_visible_in_ui` used by custom-source management.
+> - COSIRI document storage fields can vary by migration state; ensure your environment matches the active page implementation before deployment.
+
 ## 2.1 Overview
 
 The GHG Emissions Calculator uses a MySQL 8.0 database hosted on AWS RDS. The database consists of 13 interconnected tables that support multi-department emissions tracking, user management, verification workflows, reduction initiatives, and document exchange.
@@ -167,7 +173,7 @@ CREATE TABLE users (
 **Columns:**
 - `id`: Primary key, auto-increment
 - `username`: Unique username for login
-- `password_hash`: Bcrypt-hashed password (never store plain text)
+- `password_hash`: SHA-256 hashed password in current implementation (never store plain text)
 - `role`: User access level (admin/manager/normal_user)
 - `company_id`: Associated company (nullable for admin users)
 - `email`: User email address

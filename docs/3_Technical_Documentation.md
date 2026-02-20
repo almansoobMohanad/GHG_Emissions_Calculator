@@ -1,5 +1,12 @@
 # 3. Technical Documentation
 
+> **Implementation alignment update (2026-02-20):** This document intentionally retains full historical detail. For current code behavior, note these authoritative updates:
+> 1) `components/` is a top-level package (not nested under `app/`).
+> 2) Active page set includes `12_📄_COSIRI.py`.
+> 3) `DatabaseManager` uses `fetch_query` / `fetch_one` / `execute_query` (not `get_query_result` / `get_connection`).
+> 4) Current password hashing in `core/authentication.py` is SHA-256.
+> 5) Replace any real credentials in examples with placeholders.
+
 ## 3.1 Project Structure
 
 ### 3.1.1 Directory Layout
@@ -23,9 +30,11 @@ C:\SHRDC\GHG_Final\
 │   │   ├── 09_📝_ESG_Ready_Questionnaire.py # i-ESG questionnaire
 │   │   ├── 10_📤_Document_Requests.py  # Inter-dept document sharing
 │   │   ├── 11_⚙️_Manage_Emission_Factors.py # Factor management
+│   │   ├── 12_📄_COSIRI.py             # COSIRI document repository
 │   │   └── 13_🎯_Roadmap_Tracker.py    # Reduction initiatives
 │   │
-│   ├── components/                     # Reusable UI components
+│
+├── components/                         # Reusable UI components
 │   │   ├── __init__.py
 │   │   ├── header.py                   # App header/branding
 │   │   ├── login_form.py               # Login UI component
@@ -267,14 +276,10 @@ rows = get_emissions_data(
 **Key Functions:**
 ```python
 def hash_password(password: str) -> str:
-    """Hash password using bcrypt"""
+    """Hash password using SHA-256"""
     
-def verify_password(password: str, password_hash: str) -> bool:
-    """Verify password against stored hash"""
-    
-def authenticate_user(username: str, password: str) -> dict | None:
-    """Validate credentials against database"""
-    # Returns user dict or None
+def authenticate_user(username: str, password: str):
+    """Validate credentials against database and return (user, error) tuple"""
     
 def init_session_state():
     """Initialize session state variables on app start"""
@@ -291,10 +296,10 @@ def logout():
 ```
 
 **Password Security:**
-- Uses bcrypt for hashing (not plain MD5/SHA1)
-- Minimum length: 6 characters (enforced on registration)
+- Uses SHA-256 hashing in current implementation
+- Minimum length policy should be enforced by registration UI/business rules
 - One-way hashing: passwords cannot be recovered
-- Salting is automatic in bcrypt
+- For production hardening, migrate to bcrypt/argon2
 
 **Session State Variables:**
 ```python
@@ -692,9 +697,9 @@ class Config:
 **Environment Variables (.env file):**
 ```env
 # Production Database
-DB_HOST=ghg-1.c9260sqmwpz9.ap-southeast-1.rds.amazonaws.com
-DB_USER=admin
-DB_PASSWORD=MSFSHRDC4WD
+DB_HOST=<your-db-host>
+DB_USER=<your-db-user>
+DB_PASSWORD=<your-db-password>
 DB_NAME=ghg_emissions_calculator_db
 DB_PORT=3306
 
@@ -778,30 +783,29 @@ cursor.execute(query, (company_id,))
 
 ### 3.4.2 Password Security
 
-**Hashing Algorithm:** bcrypt
+**Hashing Algorithm:** SHA-256 (current)
 - One-way function (cannot be reversed)
-- Salting is automatic
-- Slow by design (prevents brute-force attacks)
+- Deterministic hashing in current implementation
+- Recommended enhancement: move to bcrypt/argon2 with per-user salts
 
 **Implementation:**
 ```python
-import bcrypt
+import hashlib
 
 def hash_password(password: str) -> str:
-    """Hash password using bcrypt"""
-    salt = bcrypt.gensalt()
-    return bcrypt.hashpw(password.encode('utf-8'), salt).decode('utf-8')
+    """Hash password using SHA-256"""
+    return hashlib.sha256(password.encode()).hexdigest()
 
 def verify_password(password: str, password_hash: str) -> bool:
     """Verify password against hash"""
-    return bcrypt.checkpw(password.encode('utf-8'), password_hash.encode('utf-8'))
+    return hashlib.sha256(password.encode()).hexdigest() == password_hash
 ```
 
 **Password Policy:**
 - Minimum 6 characters (recommend 8+)
 - No special requirements (consider adding in future)
 - Case-sensitive
-- Stored as bcrypt hash (never plain text)
+- Stored as SHA-256 hash in current implementation (never plain text)
 
 ---
 
@@ -1058,7 +1062,7 @@ pool = pooling.MySQLConnectionPool(**pool_config)
 ### 3.7.1 Setting Up Development Environment
 
 **Prerequisites:**
-- Python 3.8+
+- Python 3.10+
 - MySQL 8.0+
 - Git
 

@@ -12,6 +12,8 @@ The GHG Emissions Calculator is a multi-page web application built using Streaml
 - **Reduction Initiatives**: Track decarbonization goals and progress
 - **Document Management**: Request and share ESG reports between departments
 - **Reporting**: Generate SEDG disclosure reports and i-ESG questionnaires
+- **Document Repository**: Upload, download, and manage COSIRI certificates/reports
+- **Baseline Analytics**: Baseline year tracking and multi-year dashboard comparisons
 
 ---
 
@@ -21,7 +23,7 @@ The GHG Emissions Calculator is a multi-page web application built using Streaml
 | Component | Technology | Version/Details |
 |-----------|-----------|-----------------|
 | **Frontend Framework** | Streamlit | Python-based web framework |
-| **Programming Language** | Python | 3.8+ |
+| **Programming Language** | Python | 3.10+ |
 | **Database** | MySQL | 8.0+ (AWS RDS) |
 | **Database Connector** | mysql-connector-python | Connection pooling enabled |
 | **Cloud Platform** | AWS | RDS for database hosting |
@@ -125,18 +127,19 @@ The system implements three user roles with hierarchical permissions:
 |------|-------------|-----------------|
 | **Admin** | Full access | - Manage all companies<br>- Manage all users<br>- Access all pages<br>- System configuration<br>- View all data across companies |
 | **Manager** | Department management | - Verify emissions data<br>- Manage department users<br>- View department data<br>- Request/share documents<br>- Create reduction initiatives |
-| **Normal User** | Basic operations | - Add emission entries<br>- View own company data<br>- Track reduction progress<br>- Cannot verify or approve data |
+| **Normal User** | Basic operations | - Add emission entries<br>- View own company data<br>- Access ESG questionnaire and COSIRI repository<br>- Track reduction progress<br>- Cannot verify or approve data |
 
 **Page-Level Permissions** (`config/permissions.py`):
 ```python
 PAGE_PERMISSIONS = {
-    '05_⚙️_Admin_Panel.py': ['admin'],
-    '06_👥_User_Management.py': ['admin'],
-    '07_🏢_Company_Management.py': ['admin'],
-    '04_✅_Verify_Data.py': ['admin', 'manager'],
-    '10_📤_Document_Requests.py': ['admin', 'manager'],
-    '11_⚙️_Manage_Emission_Factors.py': ['admin', 'manager'],
-    # All other pages: accessible by all authenticated users
+     '05_⚙️_Admin_Panel.py': ['admin'],
+     '06_👥_User_Management.py': ['admin'],
+     '07_🏢_Company_Management.py': ['admin'],
+     '04_✅_Verify_Data.py': ['admin', 'manager'],
+     '10_📤_Document_Requests.py': ['admin', 'manager'],
+     '11_⚙️_Manage_Emission_Factors.py': ['admin', 'manager'],
+     '12_📄_COSIRI.py': ['admin', 'manager', 'normal_user'],
+     # All other pages: accessible by all authenticated users
 }
 ```
 
@@ -457,10 +460,7 @@ services/
 
 ### 1.7.1 Current Security Measures
 
-1. **Password Security**
-   - Passwords are hashed using bcrypt before storage
-   - Plain-text passwords never stored in database
-   - Password validation on registration (minimum length, complexity)
+1. **Password Security**: Passwords are hashed using SHA-256 before storage, plain-text passwords are never stored in the database, and password validation is enforced on registration.
 
 2. **SQL Injection Prevention**
    - All database queries use parameterized statements

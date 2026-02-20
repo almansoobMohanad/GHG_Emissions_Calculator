@@ -9,7 +9,7 @@ Practical, role-based guides for using the GHG Emissions Calculator. Screens mat
 2) After login, check the top of each page for your role badge.
 3) Use the sidebar to navigate pages; restricted pages are hidden or blocked if you lack access.
 4) Use the refresh button (🔄) on data-heavy pages to pull the latest data.
-5) Download reports from the relevant pages (SEDG, Questionnaire, or Document Requests).
+5) Download reports/documents from relevant pages (SEDG, Questionnaire, COSIRI, and approved Document Requests by role).
 
 ---
 
@@ -23,6 +23,7 @@ Practical, role-based guides for using the GHG Emissions Calculator. Screens mat
 - Company Management: Create/verify companies (admins only).
 - SEDG Disclosure: Generate SEDG PDF.
 - ESG Ready Questionnaire: Generate i-ESG questionnaire PDF.
+- COSIRI Documents: Upload/manage/report & certificate files (role-based).
 - Document Requests: Request/share PDFs between departments.
 - Manage Emission Factors: View/update emission factors (admins/managers).
 - Roadmap Tracker: Track reduction goals and initiatives.
@@ -35,10 +36,11 @@ Practical, role-based guides for using the GHG Emissions Calculator. Screens mat
 - What you can do:
   - Add emissions data
   - View your company data
-  - Download SEDG/Questionnaire PDFs
+  - Access ESG questionnaire and COSIRI documents (view/download based on permissions)
 - What you cannot do:
   - Verify/reject emissions
   - Manage users/companies
+  - Access Document Requests and Manage Emission Factors pages
   - Change emission factors
 - Daily flow:
   1) Go to Add Activity → enter data (choose scope, period, unit, amount).
@@ -143,7 +145,11 @@ Practical, role-based guides for using the GHG Emissions Calculator. Screens mat
 - Actions: View and update emission factors; add custom sources (if enabled).
 - Tip: Record a clear reason when updating factors.
 
-### 5.4.12 Roadmap Tracker (13_🎯_Roadmap_Tracker.py)
+### 5.4.12 COSIRI Documents (12_📄_COSIRI.py)
+- Purpose: Manage company certificates/reports with upload, filtering, download, and soft-delete.
+- Access: All roles can view; upload/delete actions are restricted by role permissions.
+
+### 5.4.13 Roadmap Tracker (13_🎯_Roadmap_Tracker.py)
 - Purpose: Track reduction goals, initiatives, and progress milestones.
 - Actions: Add goals, initiatives, and update progress.
 - Tip: Keep baseline and target years accurate to track % reduction.
@@ -151,7 +157,7 @@ Practical, role-based guides for using the GHG Emissions Calculator. Screens mat
 ---
 
 ## 5.5 Data Entry Standards
-- Periods: Use `YYYY-Q#` (e.g., 2024-Q1). Stay consistent.
+- Periods: Use supported reporting periods shown in the app (year-based list and compatible period labels used by your environment).
 - Units: Match the emission type (kWh for electricity, liters for fuel, kg for waste).
 - Notes: Add short context for unusual values or corrections.
 - Documentation: Attach or reference supporting files when required.

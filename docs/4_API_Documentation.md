@@ -1,5 +1,12 @@
 # 4. API Documentation
 
+> **Implementation alignment update (2026-02-20):**
+> - `core/database.py` currently exposes `fetch_query`, `fetch_one`, and `execute_query`.
+> - `get_query_result()` and `get_connection()` are legacy references in this document and should be treated as historical.
+> - Authentication currently uses SHA-256 hashing in `core/authentication.py`.
+> - Verification workflow is handled through current cache/core functions in pages; `verify_emission()` references here are legacy examples.
+> - `utils/` examples are historical; utility coverage is now distributed across core/config modules.
+
 ## 4.1 Overview
 
 This section documents all public APIs in the GHG Emissions Calculator application. APIs are organized by module and include function signatures, parameters, return types, error codes, and usage examples.
@@ -16,11 +23,11 @@ This section documents all public APIs in the GHG Emissions Calculator applicati
 
 ## 4.2 Database API (core/database.py)
 
-### 4.2.1 DatabaseManager.get_query_result()
+### 4.2.1 DatabaseManager.fetch_query() *(Current)*
 
 **Signature:**
 ```python
-def get_query_result(self, query: str, params: tuple = None, fetch_one: bool = False) -> list | dict | None
+def fetch_query(self, query, params=None) -> list[tuple]
 ```
 
 **Parameters:**
@@ -28,12 +35,9 @@ def get_query_result(self, query: str, params: tuple = None, fetch_one: bool = F
 |-----------|------|----------|-------------|
 | `query` | str | Yes | SQL SELECT query with `%s` placeholders |
 | `params` | tuple | No | Parameter values for placeholders |
-| `fetch_one` | bool | No | If True, return single dict; if False, return list of dicts |
 
 **Return Value:**
-- `list[dict]`: List of result rows (when `fetch_one=False`)
-- `dict`: Single result row (when `fetch_one=True`)
-- `None`: No results found (when `fetch_one=True`)
+- `list[tuple]`: List of result rows
 
 **Raises:**
 - `mysql.connector.Error`: Database connection or query error
@@ -45,25 +49,23 @@ from core.database import DatabaseManager
 db = DatabaseManager()
 
 # Fetch multiple rows
-emissions = db.get_query_result(
+emissions = db.fetch_query(
     "SELECT * FROM emissions_data WHERE company_id = %s ORDER BY created_at DESC",
     params=(5,)
 )
 # Returns: [{'id': 1, 'company_id': 5, 'emission_type': 'Electricity', ...}, ...]
 
 # Fetch single row
-company = db.get_query_result(
+company = db.fetch_one(
     "SELECT * FROM companies WHERE id = %s",
     params=(5,),
-    fetch_one=True
 )
 # Returns: {'id': 5, 'company_name': 'Tech Corp', ...}
 
 # Fetch with no results
-result = db.get_query_result(
+result = db.fetch_one(
     "SELECT * FROM companies WHERE id = %s",
     params=(999,),
-    fetch_one=True
 )
 # Returns: None
 ```
@@ -134,14 +136,12 @@ rows_affected = db.execute_query(
 
 ---
 
-### 4.2.3 DatabaseManager.get_connection()
+### 4.2.3 DatabaseManager.fetch_one() *(Current)*
 
 **Signature:**
 ```python
-@contextmanager
-def get_connection(self):
-    """Context manager for manual connection handling"""
-    yield connection
+def fetch_one(self, query, params=None):
+    """Execute SELECT and return one row or None"""
 ```
 
 **Usage:**
@@ -150,17 +150,10 @@ from core.database import DatabaseManager
 
 db = DatabaseManager()
 
-# Manual query execution with transaction
-with db.get_connection() as connection:
-    cursor = connection.cursor(dictionary=True)
-    try:
-        # Multiple related operations
-        cursor.execute("INSERT INTO emissions_data (...) VALUES (...)")
-        cursor.execute("UPDATE companies SET total_emissions = total_emissions + %s", (amount,))
-        connection.commit()
-    except Exception as e:
-        connection.rollback()
-        raise
+company = db.fetch_one(
+    "SELECT * FROM companies WHERE id = %s",
+    (5,)
+)
 ```
 
 ---
@@ -381,7 +374,7 @@ def hash_password(password: str) -> str
 | `password` | str | Yes | Plain text password |
 
 **Return Value:**
-- `str`: bcrypt hash (typically 60 characters)
+- `str`: SHA-256 hex hash (64 characters in current implementation)
 
 **Example:**
 ```python
@@ -389,12 +382,12 @@ from core.authentication import hash_password
 
 password = "MySecurePassword123"
 hashed = hash_password(password)
-# Returns: "$2b$12$abcdefghijklmnopqrstuvwxyz..."
+# Returns: "6f9a4e6f7f6b..."  # SHA-256 hex string
 ```
 
 ---
 
-### 4.4.2 verify_password()
+### 4.4.2 verify_password() *(Historical helper pattern)*
 
 **Signature:**
 ```python
@@ -405,16 +398,18 @@ def verify_password(password: str, password_hash: str) -> bool
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `password` | str | Yes | Plain text password to verify |
-| `password_hash` | str | Yes | Stored bcrypt hash |
+| `password_hash` | str | Yes | Stored SHA-256 hash (current implementation) |
 
 **Return Value:**
 - `bool`: True if password matches hash, False otherwise
+
+**Note:** In the current `core/authentication.py`, credential verification is performed inside `authenticate_user()` using the stored hash comparison flow.
 
 **Example:**
 ```python
 from core.authentication import verify_password
 
-stored_hash = "$2b$12$abcdefghijklmnopqrstuvwxyz..."
+stored_hash = "6f9a4e6f7f6b..."  # SHA-256 hex string
 is_correct = verify_password("MySecurePassword123", stored_hash)
 # Returns: True
 
