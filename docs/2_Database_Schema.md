@@ -8,7 +8,7 @@
 
 ## 2.1 Overview
 
-The GHG Emissions Calculator uses a MySQL 8.0 database hosted on AWS RDS. The database consists of 13 interconnected tables that support multi-department emissions tracking, user management, verification workflows, reduction initiatives, and document exchange.
+The GHG Emissions Calculator uses a MySQL 8.0 database hosted on AWS RDS. The database consists of core and feature tables that support multi-department emissions tracking, user management, verification workflows, reduction initiatives, document exchange, and multi-session disclosure/questionnaire persistence.
 
 **Database Name:** `ghg_emissions_calculator_db`  
 **Character Set:** `utf8mb4`  
@@ -16,10 +16,15 @@ The GHG Emissions Calculator uses a MySQL 8.0 database hosted on AWS RDS. The da
 **Engine:** InnoDB (supports transactions and foreign keys)
 
 ### Database Statistics
-- **Total Tables:** 13
+- **Total Tables:** 15
 - **Total Foreign Keys:** 12+
 - **Supports Transactions:** Yes
 - **Backup Strategy:** AWS RDS automated backups (daily)
+
+### Persistence Notes (Long-Form Workflows)
+- **SEDG disclosure drafts and submissions** are stored in `sedg_disclosures`, keyed by `company_id + disclosure_period`.
+- **i-ESG questionnaire drafts and submissions** are stored in `iesg_responses`, keyed by `company_id + assessment_period`.
+- Both tables support save/resume workflows, enabling users to continue forms over multiple sessions (days/weeks) before final submission.
 
 ---
 
@@ -963,6 +968,24 @@ Examples:
 
 **Flexibility:** The system accepts any string format for reporting periods, allowing organizations to use their preferred time-based grouping.
 
+### 2.6.4 Multi-Session Form Persistence (SEDG and i-ESG)
+
+To support long-running completion cycles, the application persists draft form data directly in database JSON columns and restores it when users return.
+
+**SEDG Disclosure Persistence:**
+- **Table:** `sedg_disclosures`
+- **Record key:** `company_id + disclosure_period`
+- **Payload column:** `sedg_data` (JSON)
+- **Workflow:** Insert on first save, update on subsequent saves, status transition to submitted on final submission.
+
+**i-ESG Questionnaire Persistence:**
+- **Table:** `iesg_responses`
+- **Record key:** `company_id + assessment_period`
+- **Payload column:** `response_data` (JSON)
+- **Workflow:** Insert on first save, update on subsequent saves, status transition from draft/in_progress to completed/submitted.
+
+This design allows users to save progress, close the app, and resume completion over days or weeks without data loss.
+
 ---
 
 ## 2.7 Database Initialization
@@ -973,7 +996,7 @@ The database can be initialized using the provided setup script:
 
 **What it does:**
 1. Creates the database if it doesn't exist
-2. Creates all 13 tables in proper dependency order
+2. Creates all 15 tables in proper dependency order
 3. Seeds reference data:
    - GHG scopes (1, 2, 3)
    - Categories for each scope

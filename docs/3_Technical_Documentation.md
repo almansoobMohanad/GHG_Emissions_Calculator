@@ -63,6 +63,8 @@ C:\SHRDC\GHG_Final\
 │   ├── document_requests.py            # Document request workflows
 │   ├── emission_factors.py             # Emission factor management
 │   ├── reduction_cache.py              # Reduction goals/initiatives
+│   ├── sedg_management.py              # SEDG save/resume persistence
+│   ├── iesg_management.py              # i-ESG save/resume persistence
 │   ├── sedg_pdf.py                     # SEDG report PDF generation
 │   ├── esg_questionnaire_pdf.py        # i-ESG questionnaire PDF
 │   └── __pycache__/
@@ -143,6 +145,22 @@ C:\SHRDC\GHG_Final\
 ---
 
 ## 3.2 Core Modules
+
+### 3.2.0 Long-Form Persistence Modules (SEDG and i-ESG)
+
+The app supports multi-session progress saving for form-heavy workflows.
+
+- `core/sedg_management.py`
+    - Loads existing data from `sedg_disclosures` by `(company_id, disclosure_period)`.
+    - Saves draft updates to JSON column `sedg_data` using insert-or-update behavior.
+    - Tracks lifecycle status (`in_progress`, `submitted`) and submission timestamps.
+
+- `core/iesg_management.py`
+    - Loads existing responses from `iesg_responses` by `(company_id, assessment_period)`.
+    - Saves questionnaire drafts to JSON column `response_data` with insert-or-update behavior.
+    - Tracks completion metadata (`completion_score`, `esg_readiness_score`) and status progression (`draft`, `in_progress`, `completed`, `submitted`).
+
+These modules ensure users can pause and resume SEDG/i-ESG completion over days or weeks.
 
 ### 3.2.1 core/database.py
 

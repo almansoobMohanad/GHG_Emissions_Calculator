@@ -122,12 +122,14 @@ Practical, role-based guides for using the GHG Emissions Calculator. Screens mat
 
 ### 5.4.8 SEDG Disclosure (08_📋_SEDG_Disclosure.py)
 - Purpose: Generate SEDG report PDF.
-- Steps: Choose period → Generate → Download.
+- Steps: Choose period → fill sections → click save as needed → resume later → submit/generate/download when complete.
+- Save/Resume: Progress is stored in the database per company and disclosure period, so completion can span multiple sessions.
 - Tip: Ensure emissions are verified for accuracy.
 
 ### 5.4.9 ESG Ready Questionnaire (09_📝_ESG_Ready_Questionnaire.py)
 - Purpose: Generate i-ESG questionnaire PDF.
-- Steps: Select company → Generate → Download.
+- Steps: Select company/period → answer sections → save progress → resume later → finalize/generate/download.
+- Save/Resume: Responses are persisted in the database per company and assessment period, allowing long-running completion.
 
 ### 5.4.10 Document Requests (10_📤_Document_Requests.py)
 - Use cases: Request SEDG/Questionnaire from another department/company; respond to incoming requests.
