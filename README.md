@@ -5,6 +5,15 @@ Sustainability Monitoring Hub is a Streamlit-based platform for company-level su
 
 [Live Demo](https://manage-ghg-emissions.streamlit.app/)
 
+<img width="2537" height="1330" alt="image" src="https://github.com/user-attachments/assets/2eed6eec-7d2c-41a9-b332-f9bbc3167fa3" />
+<img width="2525" height="1337" alt="image" src="https://github.com/user-attachments/assets/c89b5642-a167-4199-a9d0-5cb6b04e1f07" />
+<img width="2527" height="1335" alt="image" src="https://github.com/user-attachments/assets/f2b8322f-6aff-4c76-8aed-788819de6231" />
+<img width="2524" height="1326" alt="image" src="https://github.com/user-attachments/assets/d5f8a386-ca5b-4387-b338-2cdec026692a" />
+
+
+
+
+
 ## Current Capabilities
 - **Authentication + role access control**: Login/registration with page-level permissions (admin, manager, normal user).
 - **GHG activity entry**: Add single emissions entries by scope/category/source with reporting period, data source, and calculation notes.
