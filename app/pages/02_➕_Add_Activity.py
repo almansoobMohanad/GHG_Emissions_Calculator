@@ -64,7 +64,7 @@ for src in sources:
 selected_scope = st.selectbox(
     "GHG Scope",
     options=sorted(scopes.keys()),
-    format_func=lambda num: f"Scope {num}: {scopes[num]}",
+    format_func=lambda num: f"{scopes[num]}",
     help="Select which scope this emission belongs to"
 )
 
