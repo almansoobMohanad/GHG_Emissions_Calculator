@@ -11,9 +11,6 @@ Sustainability Monitoring Hub is a Streamlit-based platform for company-level su
 <img width="2524" height="1326" alt="image" src="https://github.com/user-attachments/assets/d5f8a386-ca5b-4387-b338-2cdec026692a" />
 
 
-
-
-
 ## Current Capabilities
 - **Authentication + role access control**: Login/registration with page-level permissions (admin, manager, normal user).
 - **GHG activity entry**: Add single emissions entries by scope/category/source with reporting period, data source, and calculation notes.
@@ -46,6 +43,14 @@ Sustainability Monitoring Hub is a Streamlit-based platform for company-level su
 - **Database**: MySQL (`mysql-connector-python`)
 - **Reporting**: reportlab (PDF generation)
 - **Utilities**: python-dotenv, geopy
+
+## Emission Sources & Methodology
+- **Primary default source**: The baseline system emission factors are seeded by `scripts/setup_ghg_factors.py`, which documents and loads values based on **UK Government Greenhouse Gas Reporting: Conversion Factors 2025**.
+- **Schema alignment**: Factors are organized into Scope 1, Scope 2, and Scope 3 categories aligned with GHG Protocol in `docs/7_GHG_Protocol_Schema.md`.
+- **Coverage examples**: Fuel combustion, refrigerants/fugitive emissions, purchased electricity/heat, business travel, transport, waste, and other value-chain activities.
+- **Custom company factors**: Managers/admins can create company-specific custom sources in `app/pages/11_⚙️_Manage_Emission_Factors.py`.
+- **Traceability fields**: The emission source model supports `data_source_reference`, `reference_year`, versioning, and history (`scripts/migrate_emission_factors.py`) to track where a factor came from and when it changed.
+- **Practical note**: You should periodically review and update factors for your jurisdiction and reporting year if local/national factors are preferred over UK defaults.
 
 ## Quickstart
 1. **Prerequisites**
@@ -102,3 +107,4 @@ Sustainability Monitoring Hub is a Streamlit-based platform for company-level su
 - The app title is now **Sustainability Monitoring Hub** (`app/main.py`).
 - Most pages enforce company assignment/verification and role-based access before usage.
 - Reporting and verification workflows are integrated with cache-backed data access for performance.
+- Default factor dataset is bootstrapped via `python scripts/setup_ghg_factors.py`; you can then refine with custom factors per company.
