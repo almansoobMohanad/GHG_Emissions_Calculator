@@ -1,36 +1,54 @@
-GHG Final — Streamlit App
-=========================
+Sustainability Monitoring Hub
+=============================
 
-A Streamlit-based greenhouse gas (GHG) tracking platform for companies to log activity data, calculate emissions, manage emission factors, verify entries, and plan reduction roadmaps.
+Sustainability Monitoring Hub is a Streamlit-based platform for company-level sustainability operations. It combines GHG emissions tracking with verification workflows, ESG reporting/disclosure modules, document exchange, and reduction roadmap planning.
+
 [Live Demo](https://manage-ghg-emissions.streamlit.app/)
 
-## Features
-- **Authentication & roles**: Login/registration with role-aware pages (admin/manager/user).
-- **Activity capture**: Add single emission entries with scoped/category/source selection and dynamic reporting periods.
-- **Bulk upload**: CSV/Excel import with validation (source code, year format, positive activity) and optional auto-verify.
-- **Dashboard analytics**: Baseline-year status, single-year and multi-year emissions comparisons.
-- **Factor management**: Activate/deactivate system/custom emission factors, add/edit/delete custom factors, scope-level bulk toggles, and history.
-- **Verification & QA**: Pages to review/verify uploaded emissions and view data dashboards.
-- **Roadmap & goals**: Reduction goals, initiatives, year-over-year trends, and progress visualization.
-- **Admin utilities**: User/company management, document requests, COSIRI repository, and SEDG/iESG readiness pages.
+## Current Capabilities
+- **Authentication + role access control**: Login/registration with page-level permissions (admin, manager, normal user).
+- **GHG activity entry**: Add single emissions entries by scope/category/source with reporting period, data source, and calculation notes.
+- **Bulk emissions upload**: Upload emissions in bulk with validation and integrated processing.
+- **Emissions dashboard**: Baseline-year setup, baseline metrics, single-year analysis, and multi-year comparisons.
+- **Data review and verification**:
+  - View/filter emissions records and detailed calculation breakdowns.
+  - Verify/reject entries with audit trail and bulk-verify support.
+- **Emission factor management**:
+  - Activate/deactivate visibility of sources by company.
+  - Add/edit/delete custom emission sources.
+  - Reference year support, search/filter tools, and source history.
+  - Bulk custom source upload.
+- **Roadmap Tracker**:
+  - Define reduction goals.
+  - Create and manage initiatives/action plans.
+  - Track progress and year-over-year performance.
+- **SEDG Report Generator**: Structured SEDG v2 disclosure workflow with PDF generation.
+- **ESG Ready Questionnaire**: Multi-section ESG readiness assessment with persistence and downloadable report.
+- **Document Requests**: Inter-company document request workflow (request, approve/upload, reject/cancel).
+- **COSIRI Documents**: Upload, browse, filter, download, and manage company documents.
+- **Administration**:
+  - Admin panel with system statistics and recent activity.
+  - Pending company verification review/approval.
+  - User management and company management modules.
 
 ## Tech Stack
-- **Frontend**: Streamlit
-- **Data/visuals**: pandas, Plotly
-- **DB layer**: MySQL (mysql-connector-python)
-- **Config**: `.env` loaded via python-dotenv
+- **Frontend/App**: Streamlit
+- **Data and charts**: pandas, Plotly
+- **Database**: MySQL (`mysql-connector-python`)
+- **Reporting**: reportlab (PDF generation)
+- **Utilities**: python-dotenv, geopy
 
 ## Quickstart
-1. **Prereqs**
-	- Python 3.10+ (recommended)
-	- MySQL 8.x instance
-2. **Clone & install**
+1. **Prerequisites**
+	- Python 3.10+
+	- MySQL 8.x
+2. **Install dependencies**
 	```bash
 	python -m venv venv
-	venv\\Scripts\\activate  # Windows
+	venv\Scripts\activate
 	pip install -r requirements.txt
 	```
-3. **Environment variables** (`.env` in project root)
+3. **Create `.env` in project root**
 	```bash
 	DB_HOST=localhost
 	DB_PORT=3306
@@ -42,34 +60,36 @@ A Streamlit-based greenhouse gas (GHG) tracking platform for companies to log ac
 	DEBUG=True
 	SESSION_TIMEOUT=3600
 	```
-4. **Initialize database** (adjust creds/host as needed)
+4. **Initialize database and baseline data**
 	```bash
 	python scripts/setup_db.py
 	python scripts/setup_ghg_factors.py
-	python scripts/setup_test_users.py   # optional sample users
-	python scripts/create_reduction_tables.py  # reduction/roadmap tables
-	python scripts/migrate_emission_factors.py # if migrating factors
+	python scripts/create_reduction_tables.py
+	# optional:
+	python scripts/setup_test_users.py
 	```
-5. **Run the app**
+5. **Run app**
 	```bash
 	python -m streamlit run app/main.py
 	```
 
-## Useful Pages (Streamlit)
-- Dashboard: pages/01_🏠_Dashboard.py
-- Add Activity: pages/02_➕_Add_Activity.py
-- View/Verify Data: pages/03_📊_View_Data.py, pages/04_✅_Verify_Data.py
-- Manage Emission Factors: pages/11_⚙️_Manage_Emission_Factors.py
-- COSIRI Documents: pages/12_📄_COSIRI.py
-- Roadmap Tracker: pages/13_🎯_Roadmap_Tracker.py
-- User/Company Management: pages/06_👥_User_Management.py, pages/07_🏢_Company_Management.py
+## Main Streamlit Pages
+- `app/main.py` (entry/auth routing)
+- `app/pages/01_🏠_Dashboard.py`
+- `app/pages/02_➕_Add_Activity.py`
+- `app/pages/03_📊_View_Data.py`
+- `app/pages/04_✅_Verify_Data.py`
+- `app/pages/05_⚙️_Admin_Panel.py`
+- `app/pages/06_👥_User_Management.py`
+- `app/pages/07_🏢_Company_Management.py`
+- `app/pages/08_📋_SEDG_Disclosure.py`
+- `app/pages/09_📝_ESG_Ready_Questionnaire.py`
+- `app/pages/10_📤_Document_Requests.py`
+- `app/pages/11_⚙️_Manage_Emission_Factors.py`
+- `app/pages/12_📄_COSIRI.py`
+- `app/pages/13_🎯_Roadmap_Tracker.py`
 
 ## Notes
-- Reporting periods are generated dynamically (current year ± range) and validated on upload (year between 1900–2100).
-- Cache is cleared after emission-factor changes and bulk actions to keep dropdowns current.
-- Bulk uploads require `source_code`, `reporting_period`, and `activity_data`; optional fields include `data_source`, `calculation_method`, and `notes`.
-
-## Troubleshooting
-- **Checkbox state not updating**: Use the Refresh button on Manage Emission Factors; caches clear on bulk actions and toggles.
-- **DB connection issues**: Verify `.env` credentials and that MySQL is reachable.
-- **Streamlit reload loops**: Ensure only one `st.set_page_config` call (already set in `app/main.py`).
+- The app title is now **Sustainability Monitoring Hub** (`app/main.py`).
+- Most pages enforce company assignment/verification and role-based access before usage.
+- Reporting and verification workflows are integrated with cache-backed data access for performance.
