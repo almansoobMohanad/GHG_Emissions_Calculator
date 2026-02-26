@@ -505,16 +505,30 @@ class DatabaseSetup:
         # Create sample company
         print("  Creating sample company...", end=" ")
         company_query = """
-            INSERT IGNORE INTO companies 
+            INSERT INTO companies 
             (company_name, company_code, industry_sector, address, contact_email, verification_status) VALUES
-            ('Demo Manufacturing Ltd', 'DEMO001', 'Manufacturing', '123 Industrial Park, London, UK', 'contact@demomfg.com', 'verified')
+            ('Test Company Ltd', 'TEST001', 'Technology', '456 Test Street, London, UK', 'contact@testcompany.com', 'verified')
+            ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id)
         """
         if self.execute_query(company_query):
             print("✅")
-            print("      Company: Demo Manufacturing Ltd")
-            print("      Code: DEMO001")
+            print("      Company: Test Company Ltd")
+            print("      Code: TEST001")
         else:
             print("⏭️  (already exists)")
+
+        # Ensure admin is always associated with Test Company Ltd
+        print("  Linking admin user to company...", end=" ")
+        admin_company_query = """
+            UPDATE users
+            SET company_id = (SELECT id FROM companies WHERE company_code = 'TEST001' LIMIT 1)
+            WHERE username = 'admin'
+        """
+        if self.execute_query(admin_company_query):
+            print("✅")
+        else:
+            print("❌")
+            return False
         
         # Create sample user associated with the company
         print("  Creating sample company user...", end=" ")
@@ -523,7 +537,7 @@ class DatabaseSetup:
         sample_user_query = """
             INSERT IGNORE INTO users (username, email, password_hash, role, company_id, is_active) VALUES
             ('demouser', 'user@demomfg.com', %s, 'manager', 
-             (SELECT id FROM companies WHERE company_code = 'DEMO001'), TRUE)
+               (SELECT id FROM companies WHERE company_code = 'TEST001'), TRUE)
         """
         if self.execute_query(sample_user_query, (sample_password_hash,)):
             print("✅")
