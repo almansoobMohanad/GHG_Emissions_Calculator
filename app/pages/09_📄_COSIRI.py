@@ -16,7 +16,7 @@ from config.constants import REPORTING_PERIODS
 
 
 # Check permissions
-check_page_permission('12_📄_COSIRI.py')
+check_page_permission('09_📄_COSIRI.py')
 
 st.set_page_config(page_title="COSIRI Documents", page_icon="📄", layout="wide")
 

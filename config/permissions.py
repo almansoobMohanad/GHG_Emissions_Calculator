@@ -11,35 +11,35 @@ PAGE_PERMISSIONS = {
         '02_➕_Add_Activity.py',
         '03_📊_View_Data.py',
         '04_✅_Verify_Data.py',
-        '05_⚙️_Admin_Panel.py',  # Admin only
-        '06_👥_User_Management.py',  # Admin only
-        '07_🏢_Company_Management.py',  # Admin only
-        '08_📋_SEDG_Disclosure.py',
-        '09_📝_ESG_Ready_Questionnaire.py',
+        '05_🎯_Roadmap_Tracker.py',  # Accessible to all roles
+        '06_⚙️_Manage_Emission_Factors.py',
+        '07_📋_SEDG_Disclosure.py',
+        '08_📝_ESG_Ready_Questionnaire.py',
+        '09_📄_COSIRI.py',
         '10_📤_Document_Requests.py',  # ✅ Added Document Requests
-        '11_⚙️_Manage_Emission_Factors.py',
-        '12_📄_COSIRI.py',
-        '13_🎯_Roadmap_Tracker.py',  # Accessible to all roles
+        '11_⚙️_Admin_Panel.py',  # Admin only
+        '12_👥_User_Management.py',  # Admin only
+        '13_🏢_Company_Management.py',  # Admin only
     ],
     'manager': [
         '01_🏠_Dashboard.py',
         '02_➕_Add_Activity.py',
         '03_📊_View_Data.py',
         '04_✅_Verify_Data.py',
-        '08_📋_SEDG_Disclosure.py',
-        '09_📝_ESG_Ready_Questionnaire.py',
+        '05_🎯_Roadmap_Tracker.py',  # Accessible to all roles
+        '06_⚙️_Manage_Emission_Factors.py',
+        '07_📋_SEDG_Disclosure.py',
+        '08_📝_ESG_Ready_Questionnaire.py',
+        '09_📄_COSIRI.py',
         '10_📤_Document_Requests.py',  # ✅ Manager can request/share documents
-        '11_⚙️_Manage_Emission_Factors.py',
-        '12_📄_COSIRI.py',
-        '13_🎯_Roadmap_Tracker.py',  # Accessible to all roles
     ],
     'normal_user': [
         '01_🏠_Dashboard.py',
         '02_➕_Add_Activity.py',
         '03_📊_View_Data.py',
-        '09_📝_ESG_Ready_Questionnaire.py',
-        '12_📄_COSIRI.py',
-        '13_🎯_Roadmap_Tracker.py',  # Accessible to all roles
+        '05_🎯_Roadmap_Tracker.py',  # Accessible to all roles
+        '08_📝_ESG_Ready_Questionnaire.py',
+        '09_📄_COSIRI.py',
     ]
 }
 

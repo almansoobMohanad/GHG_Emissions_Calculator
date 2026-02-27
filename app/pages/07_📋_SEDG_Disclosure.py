@@ -18,7 +18,7 @@ from components.company_verification import enforce_company_verification
 from core.sedg_management import SEDGAutoSave, initialize_sedg_form_session, show_sedg_unsaved_warning
 
 # Check permissions
-check_page_permission('08_📋_SEDG_Disclosure.py')
+check_page_permission('07_📋_SEDG_Disclosure.py')
 
 st.set_page_config(page_title="SEDG Report", page_icon="📋", layout="wide")
 

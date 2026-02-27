@@ -31,7 +31,7 @@ from components.company_verification import enforce_company_verification
 from components.bulk_custom_sources_upload import render_bulk_custom_sources_upload
 
 # Check permissions
-check_page_permission('11_⚙️_Manage_Emission_Factors.py')
+check_page_permission('06_⚙️_Manage_Emission_Factors.py')
 
 st.set_page_config(page_title="Manage Emission Factors", page_icon="⚙️", layout="wide")
 

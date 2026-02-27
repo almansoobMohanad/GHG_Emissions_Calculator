@@ -22,7 +22,7 @@ from core.cache import (
 from components.company_verification import enforce_company_verification
 
 # Check permissions
-check_page_permission('07_🏢_Company_Management.py')
+check_page_permission('13_🏢_Company_Management.py')
 
 st.set_page_config(page_title="Company Management", page_icon="🏢", layout="wide")
 

@@ -17,7 +17,7 @@ from components.company_verification import enforce_company_verification
 from core.iesg_management import IESGAutoSave, initialize_iesg_responses_session, show_iesg_unsaved_warning
 
 # Check permissions
-check_page_permission('09_📝_ESG_Ready_Questionnaire.py')
+check_page_permission('08_📝_ESG_Ready_Questionnaire.py')
 
 st.set_page_config(page_title="ESG Ready", page_icon="📝", layout="wide")
 

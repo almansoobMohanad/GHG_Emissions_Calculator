@@ -22,7 +22,7 @@ from core.authentication import hash_password
 from components.company_verification import enforce_company_verification
 
 # Check permissions
-check_page_permission('06_👥_User_Management.py')
+check_page_permission('12_👥_User_Management.py')
 
 
 st.set_page_config(page_title="User Management", page_icon="👥", layout="wide")

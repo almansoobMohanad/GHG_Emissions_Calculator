@@ -651,12 +651,12 @@ if st.session_state.company_id:
     with col3:
         if can_user('can_generate_reports'):
             if st.button("📋 Generate Report", width="stretch"):
-                st.switch_page("pages/08_📋_SEDG_Disclosure.py")
+                st.switch_page("pages/07_📋_SEDG_Disclosure.py")
     
     with col4:
         if can_user('can_manage_users'):
             if st.button("⚙️ Admin Panel", width="stretch"):
-                st.switch_page("pages/05_⚙️_Admin_Panel.py")
+                st.switch_page("pages/11_⚙️_Admin_Panel.py")
 
 else:
     st.warning("⚠️ No company assigned to your account. Please contact an administrator.")

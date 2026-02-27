@@ -21,7 +21,7 @@ from core.cache import (
 from components.company_verification import enforce_company_verification
 
 # Check permissions
-check_page_permission('05_⚙️_Admin_Panel.py')
+check_page_permission('11_⚙️_Admin_Panel.py')
 
 st.set_page_config(page_title="Admin Panel", page_icon="⚙️", layout="wide")
 
@@ -185,13 +185,13 @@ with action_col1:
     st.markdown("### 👥 User Management")
     st.markdown("Manage user accounts, roles, and permissions")
     if st.button("→ Go to User Management", use_container_width=True, type="primary"):
-        st.switch_page("pages/06_👥_User_Management.py")
+        st.switch_page("pages/12_👥_User_Management.py")
 
 with action_col2:
     st.markdown("### 🏢 Company Management")
     st.markdown("Manage companies and verification status")
     if st.button("→ Go to Company Management", use_container_width=True, type="primary"):
-        st.switch_page("pages/07_🏢_Company_Management.py")
+        st.switch_page("pages/13_🏢_Company_Management.py")
 
 with action_col3:
     st.markdown("### 📊 View All Data")

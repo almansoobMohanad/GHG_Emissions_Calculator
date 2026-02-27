@@ -19,10 +19,10 @@ def check_page_permission(page_name: str):
     """Check if current user has permission to access this page.
     
     Args:
-        page_name: Filename of the page (e.g., '05_⚙️_Admin_Panel.py')
+        page_name: Filename of the page (e.g., '11_⚙️_Admin_Panel.py')
     
     Usage:
-        check_page_permission('05_⚙️_Admin_Panel.py')
+        check_page_permission('11_⚙️_Admin_Panel.py')
     """
     check_authentication()
     
