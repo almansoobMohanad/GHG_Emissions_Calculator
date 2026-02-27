@@ -4,6 +4,7 @@ Complete implementation with all official MITI questions
 """
 import streamlit as st
 import sys
+import json
 from pathlib import Path
 from datetime import datetime
 from io import BytesIO
@@ -40,6 +41,14 @@ st.title("📝 ESG Ready Questionnaire")
 st.markdown("**ESG Readiness Self-Assessment Programme**")
 st.info("ℹ️ Complete this assessment locally. Your data stays private and you can download a PDF of your responses.")
 st.divider()
+
+# Process explicit refresh request BEFORE widgets initialize
+if st.session_state.pop('iesg_force_refresh', False):
+    keys_to_clear = [k for k in list(st.session_state.keys()) if k.startswith('iesg_')]
+    for key in keys_to_clear:
+        del st.session_state[key]
+    st.session_state.pop('iesg_loaded_context', None)
+    st.cache_data.clear()
 
 # Debug info (remove after testing)
 with st.expander("🔍 Debug Info"):
@@ -133,32 +142,35 @@ def init_iesg_defaults():
 # Step 1: Initialize defaults first
 init_iesg_defaults()
 
-# Step 2: Load from database and OVERWRITE session state
-# This should happen on every page load to ensure data persists
+# Step 2: Load from database ONCE per company/period context
+# Avoid reloading on every rerun, which would overwrite in-progress edits.
 company_id = st.session_state.get('company_id')
+assessment_period = "2024"
 if company_id:
-    # This function should handle everything:
-    # 1. Load from database if data exists
-    # 2. Set defaults if no data exists
-    # 3. Set all iesg_* keys in session state
-    data_loaded = initialize_iesg_responses_session(
-        company_id=company_id,
-        assessment_period="2024"
-    )
-    
-    # Verify we actually have data by checking key fields
-    has_actual_data = any([
-        st.session_state.get('iesg_company_name', ''),
-        st.session_state.get('iesg_phone', ''),
-        st.session_state.get('iesg_q8_maturity') is not None,
-    ])
-    
-    if data_loaded and has_actual_data:
-        st.success("✅ **Form loaded from database** - Your previous responses have been restored.")
-    elif not has_actual_data:
-        st.warning("⚠️ **Data load issue detected** - Check Debug Info below")
-    else:
-        st.info("📋 **New form** - Start filling in your ESG assessment.")
+    current_context = f"{company_id}:{assessment_period}"
+    loaded_context = st.session_state.get('iesg_loaded_context')
+
+    # Only initialize from DB if this is first load or context changed
+    if loaded_context != current_context:
+        data_loaded = initialize_iesg_responses_session(
+            company_id=company_id,
+            assessment_period=assessment_period
+        )
+        st.session_state['iesg_loaded_context'] = current_context
+
+        # Verify we actually have data by checking key fields
+        has_actual_data = any([
+            st.session_state.get('iesg_company_name', ''),
+            st.session_state.get('iesg_phone', ''),
+            st.session_state.get('iesg_q8_maturity') is not None,
+        ])
+
+        if data_loaded and has_actual_data:
+            st.success("✅ **Form loaded from database** - Your previous responses have been restored.")
+        elif not has_actual_data:
+            st.warning("⚠️ **Data load issue detected** - Check Debug Info below")
+        else:
+            st.info("📋 **New form** - Start filling in your ESG assessment.")
 else:
     st.warning("⚠️ No company ID found in session state")
 
@@ -1054,8 +1066,6 @@ st.divider()
 st.header("📥 Actions & Download")
 
 # Show unsaved warning if applicable
-show_iesg_unsaved_warning()
-
 # Initialize manual save helper (no auto-save, user must click save button)
 auto_save = IESGAutoSave(st.session_state.get('company_id'), assessment_period="2024")
 
@@ -1077,6 +1087,20 @@ def get_all_iesg_responses():
             responses[clean_key] = value
     return responses
 
+# Real-time change tracking (without forcing DB reload)
+current_iesg_responses = get_all_iesg_responses()
+current_iesg_snapshot = json.dumps(current_iesg_responses, sort_keys=True, default=str)
+previous_iesg_snapshot = st.session_state.get('iesg_last_snapshot')
+
+if previous_iesg_snapshot is None:
+    st.session_state['iesg_last_snapshot'] = current_iesg_snapshot
+elif current_iesg_snapshot != previous_iesg_snapshot:
+    st.session_state.iesg_unsaved_changes = True
+    st.session_state['iesg_last_snapshot'] = current_iesg_snapshot
+
+# Show unsaved warning if applicable
+show_iesg_unsaved_warning()
+
 # Action buttons row
 col1, col2, col3, col4 = st.columns([1, 1, 1, 1])
 
@@ -1086,6 +1110,7 @@ with col1:
         responses = get_all_iesg_responses()
         success = auto_save.manual_save(responses, completion_score=progress_score)
         if success:
+            st.session_state['iesg_last_snapshot'] = json.dumps(responses, sort_keys=True, default=str)
             st.rerun()
 
 with col2:
@@ -1105,6 +1130,8 @@ with col2:
         if success:
             st.success("✅ Assessment submitted successfully!")
             st.session_state.iesg_form_status = 'submitted'
+            st.session_state.iesg_unsaved_changes = False
+            st.session_state['iesg_last_snapshot'] = json.dumps(responses, sort_keys=True, default=str)
         else:
             st.error("❌ Failed to submit assessment. Please try again.")
 
@@ -1116,7 +1143,10 @@ with col3:
         st.session_state.iesg_percentage = percentage
 
 with col4:
-    pass
+    if st.button("🔄 Refresh from DB", type="secondary", use_container_width=True,
+                 help="Reload latest saved responses from database"):
+        st.session_state['iesg_force_refresh'] = True
+        st.rerun()
 
 st.divider()
 

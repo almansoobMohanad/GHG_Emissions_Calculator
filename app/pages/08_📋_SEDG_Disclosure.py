@@ -5,6 +5,7 @@ Multi-session persistence with debounced auto-save
 """
 import streamlit as st
 import sys
+import json
 from pathlib import Path
 from datetime import datetime
 
@@ -45,6 +46,20 @@ st.divider()
 if not st.session_state.company_id:
     st.error("❌ No company assigned.")
     st.stop()
+
+# Process explicit refresh request BEFORE widgets initialize
+if st.session_state.pop('sedg_force_refresh', False):
+    selected_period = st.session_state.get('sedg_period', str(datetime.now().year))
+    keys_to_clear = [k for k in list(st.session_state.keys()) if k.startswith('sedg_')]
+    for key in keys_to_clear:
+        del st.session_state[key]
+    st.session_state['sedg_period'] = selected_period
+    st.session_state.pop('sedg_initialized', None)
+    st.session_state.pop('sedg_form_loaded', None)
+    st.session_state.pop('sedg_loaded_context', None)
+    st.session_state.pop('sedg_last_snapshot', None)
+    st.session_state['sedg_has_changes'] = False
+    st.cache_data.clear()
 
 # Initialize session state with complete SEDG fields FIRST (before any widgets)
 def init_sedg():
@@ -221,27 +236,25 @@ if not company:
     st.error("❌ Unable to load company information.")
     st.stop()
 
-# Detect page navigation using script path
-import __main__
-current_script = getattr(__main__, '__file__', 'unknown')
-last_script = st.session_state.get('last_script_path')
-
-# If coming from a different page OR first visit, reload from database
-if last_script != current_script:
-    # Update last script path
-    st.session_state.last_script_path = current_script
-    # Load from database
+# Load from database only when context changes (company + period)
+current_context = f"{st.session_state.company_id}:{st.session_state.get('sedg_period', str(datetime.now().year))}"
+if st.session_state.get('sedg_loaded_context') != current_context:
+    st.session_state.pop('sedg_initialized', None)
     initialize_sedg_form_session()
+    st.session_state['sedg_loaded_context'] = current_context
+    st.session_state.pop('sedg_last_snapshot', None)
 
 # Callback for period change to reload form
 def on_period_change():
     """Reload form when user changes disclosure period"""
-    # Clear all SEDG keys to force fresh load for new period
+    # Clear all SEDG keys except period to force fresh load for new period
     keys_to_clear = [k for k in st.session_state.keys() if k.startswith('sedg_') and k != 'sedg_period']
     for key in keys_to_clear:
         del st.session_state[key]
-    # Reload from database with new period
-    initialize_sedg_form_session()
+    st.session_state.pop('sedg_initialized', None)
+    st.session_state.pop('sedg_loaded_context', None)
+    st.session_state.pop('sedg_last_snapshot', None)
+    st.session_state['sedg_has_changes'] = False
 
 # General Info
 st.header("📊 General Information")
@@ -701,15 +714,28 @@ with tab3:
 st.divider()
 st.header("💾 Save & Generate Report")
 
-# Show unsaved warning if needed
-show_sedg_unsaved_warning()
-
 # Initialize save helper (manual save only, no auto-save)
 auto_save = SEDGAutoSave()
 auto_save.init_session_state()
 
+# Real-time change tracking (without forcing DB reload)
+current_sedg_responses = {
+    k.replace('sedg_', ''): v for k, v in st.session_state.items() if k.startswith('sedg_')
+}
+current_sedg_snapshot = json.dumps(current_sedg_responses, sort_keys=True, default=str)
+previous_sedg_snapshot = st.session_state.get('sedg_last_snapshot')
+
+if previous_sedg_snapshot is None:
+    st.session_state['sedg_last_snapshot'] = current_sedg_snapshot
+elif current_sedg_snapshot != previous_sedg_snapshot:
+    st.session_state['sedg_has_changes'] = True
+    st.session_state['sedg_last_snapshot'] = current_sedg_snapshot
+
+# Show unsaved warning if needed
+show_sedg_unsaved_warning()
+
 # Save & Submit & Download buttons
-col1, col2, col3 = st.columns(3)
+col1, col2, col3, col4 = st.columns(4)
 
 with col1:
     if st.button("💾 Save SEDG Form", type="primary", use_container_width=True):
@@ -721,6 +747,11 @@ with col1:
                 user_id=st.session_state.user_id
             )
             if success:
+                st.session_state['sedg_last_snapshot'] = json.dumps(
+                    {k.replace('sedg_', ''): v for k, v in st.session_state.items() if k.startswith('sedg_')},
+                    sort_keys=True,
+                    default=str
+                )
                 st.success("✅ SEDG form saved successfully!")
             else:
                 st.error("❌ Failed to save SEDG form")
@@ -737,6 +768,12 @@ with col2:
                     user_id=st.session_state.user_id
                 )
                 if success:
+                    st.session_state['sedg_has_changes'] = False
+                    st.session_state['sedg_last_snapshot'] = json.dumps(
+                        {k.replace('sedg_', ''): v for k, v in st.session_state.items() if k.startswith('sedg_')},
+                        sort_keys=True,
+                        default=str
+                    )
                     st.success("✅ SEDG disclosure submitted!")
                 else:
                     st.error("❌ Failed to submit disclosure")
@@ -762,6 +799,12 @@ with col3:
         except Exception as e:
             st.error(f"❌ Error: {str(e)}")
             st.exception(e)
+
+with col4:
+    if st.button("🔄 Refresh from DB", type="secondary", use_container_width=True,
+                 help="Reload latest saved SEDG data for selected period"):
+        st.session_state['sedg_force_refresh'] = True
+        st.rerun()
 
 st.divider()
 st.info(
